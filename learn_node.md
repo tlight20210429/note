@@ -1238,11 +1238,11 @@ git是一个代码管理工具，可以方便查看代码版本和团队合作�
 
 官方下载链接[Git - Downloads (git-scm.com)](https://git-scm.com/downloads)，打开后点击Download for Windows
 
-![image-20220903001752523](C:\Users\唐嘉全\AppData\Roaming\Typora\typora-user-images\image-20220903001752523.png)
+![image-20220903001752523](E:\databases\note\image-20220903001752523.png)
 
 点击64-bit Git for Windows Setup.下载
 
-![image-20220903001919412](C:\Users\唐嘉全\AppData\Roaming\Typora\typora-user-images\image-20220903001919412.png)
+![image-20220903001919412](E:\databases\note\image-20220903001919412.png)
 
 下载后双击运行安装就可以。
 
@@ -1319,15 +1319,15 @@ $ git clone 远程仓库链接
 
 选择一个文件夹输入`<span style="color:red">git init</span>创建仓库，这里将文件夹命名为learnGit，成功会出现一个.git文件夹，如果没有出现要点击查看->显示->隐藏项目就能看到了。
 
-![image-20220903005736148](C:\Users\唐嘉全\AppData\Roaming\Typora\typora-user-images\image-20220903005736148.png)
+![image-20220903005736148](E:\databases\note\image-20220903005736148.png)
 
 在learnGit根目录下新建文件readme.txt，然后输入命令 `<span style="color:red">git status</span>查看仓库文件状态。
 
-![image-20220903010139596](C:\Users\唐嘉全\AppData\Roaming\Typora\typora-user-images\image-20220903010139596.png)
+![image-20220903010139596](E:\databases\note\image-20220903010139596.png)
 
 此时文件名显示为红色，untracked表示文件未被git跟踪，可以输入命令`<span style="color:red">git add readme.txt</span>使该文件被git跟踪。此时再次运行<span style="color:red">git status</span>查看文件状态，发现文件名已变成绿色，说明该文件已被git跟踪
 
-![image-20220903011121989](C:\Users\唐嘉全\AppData\Roaming\Typora\typora-user-images\image-20220903011121989.png)
+![image-20220903011121989](E:\databases\note\image-20220903011121989.png)
 
 往readme.txt文件随便写入一些内容，再次运行<span style="color:red">git status</span>
 
@@ -1354,7 +1354,7 @@ git status
 
 文件名变成绿色，说明该文件已放入暂存区。
 
-![image-20220903012239435](C:\Users\唐嘉全\AppData\Roaming\Typora\typora-user-images\image-20220903012239435.png)
+![image-20220903012239435](E:\databases\note\image-20220903012239435.png)
 
 执行命令
 
@@ -1370,7 +1370,7 @@ git status
 
 发现工作区已变干净，没有任何修改记录。
 
-![image-20220903012537365](C:\Users\唐嘉全\AppData\Roaming\Typora\typora-user-images\image-20220903012537365.png)
+![image-20220903012537365](E:\databases\note\image-20220903012537365.png)
 
 执行命令
 
@@ -1380,7 +1380,7 @@ git log
 
 可以查看提交记录
 
-![image-20220903012630721](C:\Users\唐嘉全\AppData\Roaming\Typora\typora-user-images\image-20220903012630721.png)
+![image-20220903012630721](E:\databases\note\image-20220903012630721.png)
 
 当然有时也可以通过git commit 后面加-a选项跳过git add步骤直接将被跟踪的文件一并提交。
 
@@ -1519,23 +1519,23 @@ ssh-keygen -t rsa -C "youremail@example.com"
 
 **然后，点“New SSH Key”，填上任意Title，在Key文本框里粘贴id_rsa.pub文件的内容：**
 
-![image-20220904153558831](C:\Users\唐嘉全\AppData\Roaming\Typora\typora-user-images\image-20220904153558831.png)
+![image-20220904153558831](E:\databases\note\image-20220904153558831.png)
 
 点击Add SSH key
 
-![image-20220904154030328](C:\Users\唐嘉全\AppData\Roaming\Typora\typora-user-images\image-20220904154030328.png)
+![image-20220904154030328](E:\databases\note\image-20220904154030328.png)
 
 添加完成
 
-![image-20220904154138996](C:\Users\唐嘉全\AppData\Roaming\Typora\typora-user-images\image-20220904154138996.png)
+![image-20220904154138996](E:\databases\note\image-20220904154138996.png)
 
 **3.点击your repositories, 点击New创建一个新仓库**。
 
-![image-20220904154742389](C:\Users\唐嘉全\AppData\Roaming\Typora\typora-user-images\image-20220904154742389.png)
+![image-20220904154742389](E:\databases\note\image-20220904154742389.png)
 
 填好仓库信息，点击Create repository创建一个仓库。
 
-![image-20220904155032160](C:\Users\唐嘉全\AppData\Roaming\Typora\typora-user-images\image-20220904155032160.png)
+![image-20220904155032160](E:\databases\note\image-20220904155032160.png)
 
 **4.执行命令添加远程仓库：**
 
@@ -1549,7 +1549,7 @@ git remote add origin git@github.com:tlight20210429/learnGit.git
 git remote -v
 ```
 
-![image-20220904155654352](C:\Users\唐嘉全\AppData\Roaming\Typora\typora-user-images\image-20220904155654352.png)
+![image-20220904155654352](E:\databases\note\image-20220904155654352.png)
 
 **5.添加远程库之后还要拉取远程库分支到本地，拉取远程库到本地有两种方式，分别是git fetch 和 git pull.**
 
@@ -1561,7 +1561,7 @@ git fetch origin main
 
 将远程库origin的main分支抓取到本地，第一次执行该命令会得到一个警告，可以不用管它直接yes就行。
 
-![image-20220904160955702](C:\Users\唐嘉全\AppData\Roaming\Typora\typora-user-images\image-20220904160955702.png)
+![image-20220904160955702](E:\databases\note\image-20220904160955702.png)
 
 抓取到本地后执行命令：
 
@@ -1571,7 +1571,7 @@ git branch -a
 
 可以看到远程分支已经抓取到本地了
 
-![image-20220904161128973](C:\Users\唐嘉全\AppData\Roaming\Typora\typora-user-images\image-20220904161128973.png)
+![image-20220904161128973](E:\databases\note\image-20220904161128973.png)
 
 注意此时还不会影响到本地分支的内容，用户需要自己执行命令合并远程分支才行：
 
@@ -1608,6 +1608,10 @@ git remote rm origin
 ```console
 git remote remove origin
 ```
+
+解决github打开慢方法：
+
+
 
 ### 4.3.7git打标签
 
@@ -1727,17 +1731,17 @@ git merge bug
 
 将bug分支合并到当前分支上。当两个分支都修改的相同的部分的内容时，git无法快速合并产生冲突，出现下面的情况：
 
-![image-20220904194533231](C:\Users\唐嘉全\AppData\Roaming\Typora\typora-user-images\image-20220904194533231.png)
+![image-20220904194533231](E:\databases\note\image-20220904194533231.png)
 
 查看冲突文件里会发现<<<<<<<HEAD 和||||||||bug，其中<<<<<<<HEAD是本分支的内容，||||||||bug是bug分支的内容，需要手动解决分支才行。
 
-![image-20220904195326457](C:\Users\唐嘉全\AppData\Roaming\Typora\typora-user-images\image-20220904195326457.png)
+![image-20220904195326457](E:\databases\note\image-20220904195326457.png)
 
 这里我们保留bug分支的内容，去掉main分支内容。然后重现提交就可以顺利完成合并了。
 
-![image-20220904195509522](C:\Users\唐嘉全\AppData\Roaming\Typora\typora-user-images\image-20220904195509522.png)
+![image-20220904195509522](E:\databases\note\image-20220904195509522.png)
 
-![image-20220904195642995](C:\Users\唐嘉全\AppData\Roaming\Typora\typora-user-images\image-20220904195642995.png)
+![image-20220904195642995](E:\databases\note\image-20220904195642995.png)
 
 然后再执行命令就可以看到合并效果：
 
@@ -1761,3 +1765,639 @@ git branch -d bug
 git log --graph --pretty=oneline --abbrev-commit
 ```
 
+# 5.Nordic NRF52832学习
+
+## 5.1SDK包目录介绍
+
+以下是nRF5_SDK_15.3.0_59ac345版本SDK包目录：
+
+![image-20220918234451206](E:\databases\note\image-20220918234451206.png)
+
+1.components文件包存放的是各类驱动、蓝牙协议栈、芯片库程序等文件，是后期我们编程所需要的文件，是SDK的核心部分。
+
+2.config文件包提供开发环境以及库函数配置。
+
+3.documentaion是帮助文档，里面提供一个index.html网页引导文件。点开这个文件就可以打开官方对整个SDK支持包的说明网站，说明文档包含了各个函数定义，找到其定义，对于理解nrf5x系列处理器的编程很重要。
+
+4.example文件夹包含了官方提供给开发者的应用实例，通过参考官方的演示实例，便于开发者快速的开发出自己的应用。
+
+![image-20220918235723548](E:\databases\note\image-20220918235723548.png)
+
+802_15_4文件夹提供的nrf52840的802_15_4通信应用实例
+
+ant文件夹提供多个ANT+通信的应用实例
+
+ble_central文件夹提供多个蓝牙BLE主机的应用实例
+
+ble_central_and_peripheral文件夹提供蓝牙主从一体的应用实例
+
+ble_peripheral文件夹提供多个蓝牙BLE从机的应用实例
+
+connectivity文件夹提供蓝牙直接连接方式的几个测试代码
+
+dfu文件夹提供官方dfu的BootLoader工程和dfu的演示实例
+
+dtm文件夹Direct Test Mode，也就是直接连接测试模式的演示实例
+
+multiprotocol文件夹提供混合协议演示实例
+
+nfc文件夹提供nfc的演示实例
+
+peripheral文件夹提供多个外设的应用实例
+
+peripheral_rf文件夹提供2.4G通信下的应用实例
+
+usb_drivers文件夹提供usb驱动设备声明
+
+5.external文件夹提供了一些第三方驱动
+
+6.external_tools文件夹用来放置一些外部工具包，目前该文件夹只包含了CMSIS的配置向导
+
+## 5.2蓝牙协议栈结构
+
+以下是BLE协议栈整体架构
+
+![image-20220919001525403](E:\databases\note\image-20220919001525403.png)
+
+1.PHY层，PHY层用来指定BLE所用的无线频段，调制解调方式和方法等。PHY层做得好不好直接影响整个BLE芯片的功耗，灵敏度以及selectivity等射频指标。
+
+2.LL层，LL层是整个BLE协议栈的核心，也是BLE协议栈的难点和重点。像Nordic的BLE协议栈能同时支持20个link(连接)，就是LL层的功劳。LL层要做的事情非常多，比如具体选择哪个射频通道进行通信，怎么识别空中数据包，具体在哪个时间点把数据包发送出去，怎么保证数据的完整性，ACK如何接收，如何进行重传，以及如何对链路进行管理和控制等等。LL层只负责把数据发送出去或者接收回来，对数据进行怎样的解析则交给上面的GAP或者ATT。
+
+3.HCI层，Host controller interface，HCI是可选的，HCI主要用于2颗芯片实现BLE协议栈的场合，用来规范两者之间的通信协议和通信命令等。
+
+4.L2CAP层，L2CAP层对LL层进行了一次简单封装，LL层只关心传输的数据本身，L2CAP就要区分是加密通道还是普通通道，同时还要对连接间隔进行管理。
+
+5.SMP层，SMP层用来管理BLE连接的加密和安全的，如何保证连接的安全性，同时不影响用户的体验，这些都是SMP要考虑的工作。
+
+6.ATT层，ATT层用来定义用户命令及命令操作的数据，比如读取某个数据或者写某个数据，BLE协议栈中，开发者接触最多的就是ATT。BLE引入了attribute概念，用来描述一条一条的数据。Attribute除了定义数据，同时定义该数据可以使用的ATT命令，因此这一层被称为ATT层。
+
+7.GATT层，GATT层用来规范attribute中的数据内容，并运用group的概念对attribute进行分类管理。没有GATT，BLE协议栈也能跑，但互联互通就会出问题。
+
+8.GAP层，GAP层是对LL层payload(有效数据包)如何进行解析的两种方式中的一种，而且是最简单的那一种，GAP简单的对LL payload进行一些规范和定义，因此GAP能实现的功能极其有限。GAP目前主要用来进行广播，扫描和发起连接等。
+
+## 5.3蓝牙实现连接与通信过程
+
+BLE设备只有主机和从机两种角色，发起连接的设备称为主机，被连接的设备称为从机。
+
+### 5.3.1从机广播
+
+从机要想被主机连接，那么它就必须要使用广播将自身信息发射出去。广播包是周期性循环发送的，假如两个广播包间隔时间为t，那么称t为广播间隔，每发送一次广播包称为一次广播事件(advertising event)，因此t也称为广播事件间隔。广播事件是一阵一阵的，每次会有一个持续时间，蓝牙芯片只有在广播事件期间才打开射频模块发射广播，这时功耗比较高，其余时间蓝牙芯片处于idle待机状态，功耗非常低。
+
+![image-20220920001947204](E:\databases\note\image-20220920001947204.png)
+
+当广播发出时，每一个广播事件包含三个广播部，分别在37,38,39三个通道上同时广播相同信息。
+
+![image-20220920002108424](E:\databases\note\image-20220920002108424.png)
+
+### 5.3.2主机扫描
+
+设备不断发送广播信号给主机(Observer)，这时只有主机开启了扫描窗口并且射频接收窗口跟广播发送的发射窗口匹配成功，主机才能收到设备的广播信号。这种匹配成功是一个概率事件，所以主机可能很快就扫描到从机，也可能要一会才能扫描到从机。
+
+![image-20220920002817257](E:\databases\note\image-20220920002817257.png)
+
+控制器收到扫描数据包后将向主机发送一个广播报告事件(adv_report),该事件包含了链路层数据包的广播类型。因此，主机能够判断对端设备是否可以连接或者扫描，并且区分出广播数据包和扫描响应数据包。
+
+### 5.3.3建立连接
+
+主机收到从机广播包A1后，延时T_IFS时间给从机发送connection request命令，即A2数据包，告诉从机我将要过来连接你，请做好准备。从机根据connect_req命令信息做好接收准备。connect_req其实是告诉从机主机将要在Transmit Window期间发送第一个同步包P1给你，请在这段时间里把你的射频接收窗口打开。从机收到P1后延时T_IFS时间给主机回复数据包P2。一旦主机收到数据包P2，连接即可认为建立成功。后续主机将以P1为锚点(原点)，Connection Interval为周期，周期性地给从机发送Packet。
+
+![image-20220920005209072](E:\databases\note\image-20220920005209072.png)
+
+连接成功后，master和slave在每一个connection interval开始的时候，都必须交互一次，即master给slave发送一个包，slave再给master回一个包，整个交互过程称为一个connection event。在connection event期间，master可以发多个包给slave，以提高吞吐率。
+
+![image-20220920005728960](E:\databases\note\image-20220920005728960.png)
+
+主机RX从机TX方向：
+
+通知：从机上传数据给主机，不需要主机回复一个响应。
+
+指示：从机上传数据给主机，需要主机发一个确认给从机。
+
+主机TX从机RX方向：
+
+1.写
+
+2.没有回应的写
+
+3.读
+
+## 5.4串口Log输出配置
+
+### 5.4.1UART打印
+
+1.打开sdk_config.h勾选配置
+
+![image-20220926002747145](E:\databases\note\image-20220926002747145.png)
+
+2.勾选后切换到Text Editor，可以看到UART已使能
+
+![image-20220926003119781](E:\databases\note\image-20220926003119781.png)
+
+3.打开main.c文件，log_init()即为log初始化函数。
+
+![image-20220926003420966](E:\databases\note\image-20220926003420966.png)
+
+4.依次查看NRF_LOG_DEFAULT_BACKENDS_INIT()，nrf_log_backend_uart_init()，uart_init()，最后可以看到串口初始化函数只初始化了一个脚。
+
+![image-20220926003833087](E:\databases\note\image-20220926003833087.png)
+
+5.最后调佣NRF_LOG_INFO()函数就可以使用串口打印数据了。
+
+### 5.4.2RTT打印
+
+1.打开配置文件配置为RTT打印
+
+![image-20220926002747145](E:\databases\note\image-20220926002747145.png)
+
+2.使能之后就可以使用NRF_LOG_INFO()函数打印数据了。
+
+3.打开J-Link RTT Viewer
+
+![image-20220926004454241](E:\databases\note\image-20220926004454241.png)
+
+4.连接好J-Link，配置好参数
+
+![image-20220926004710090](E:\databases\note\image-20220926004710090.png)
+
+5.最终可以看到和串口一样的输出
+
+![image-20220926004930093](E:\databases\note\image-20220926004930093.png)
+
+## 5.5BLE定时器使用
+
+1.声明定时器，定时周期，定时超时回调函数
+
+![image-20221001000338761](E:\databases\note\image-20221001000338761.png)
+
+2.创建定时器
+
+![image-20221001000431010](E:\databases\note\image-20221001000431010.png)
+
+3.启动定时器
+
+![image-20221001000525436](E:\databases\note\image-20221001000525436.png)
+
+4.使用app timer 宏
+
+![image-20221001005323819](E:\databases\note\image-20221001005323819.png)
+
+note：
+
+如果电脑用户名是中文的话，编译将会出错，这时需要将用户名改为英文才可以。如下图所示，编译出来的工程名称后缀带有中文的，说明电脑用户名是中文，需要修改为英文才行。
+
+![image-20221001005811377](E:\databases\note\image-20221001005811377.png)
+
+修改步骤：
+
+1.win+r将输入netplwiz，点击确定
+
+![image-20221001010023838](E:\databases\note\image-20221001010023838.png)
+
+2.在打开的界面输入一个自己想要修改的英文名，比如tlight。
+
+3.打开注册表，双击ProfileImagePath，按下图方式修改
+
+![image-20221001010421465](E:\databases\note\image-20221001010421465.png)
+
+4.重启电脑，将C:\User目录下的Administrator文件夹删掉，将原来的用户名目录改成Administrator，再重启电脑即可。
+
+## 5.6蓝牙协议栈按键配置
+
+1.定义按键数量
+
+![image-20221001160419667](E:\databases\note\image-20221001160419667.png)
+
+2.定义按键ID，注意按键ID不可以大于按键数量
+
+![image-20221001160537074](E:\databases\note\image-20221001160537074.png)
+
+3.定义按键处理事件
+
+![image-20221001160204776](E:\databases\note\image-20221001160204776.png)
+
+4.配置按键动作
+
+![image-20221001160818659](E:\databases\note\image-20221001160818659.png)
+
+![image-20221001160859158](E:\databases\note\image-20221001160859158.png)
+
+5.添加事件处理工作
+
+![image-20221001161004706](E:\databases\note\image-20221001161004706.png)
+
+6.配置按键IO
+
+![image-20221001161525754](E:\databases\note\image-20221001161525754.png)
+
+7.如果要更改按键长按时间，可以修改这里，默认按键长按是1s。
+
+![image-20221001161952327](E:\databases\note\image-20221001161952327.png)
+
+LED部分可以参考类似按键这方面修改，这里不做过多了解。
+
+## 5.7BLE协议栈剖析
+
+### 5.7.1协议栈初始化
+
+![image-20221001163106302](E:\databases\note\image-20221001163106302.png)
+
+1.nrf_sdh_enable_request()函数主要是使能协议栈回复使能应答，配置系统时钟。该函数会向所有使用NRF_SDH_REQUEST_OBSERVER宏注册的observers发出一个NRF_SDH_EVT_ENABLE_REQUEST请求，当所有observers都确认请求后，协议栈将启用。否则，进程会被终止。
+
+```c
+ret_code_t nrf_sdh_enable_request(void)
+{
+    ret_code_t ret_code;
+
+    if (m_nrf_sdh_enabled)
+    {
+        return NRF_ERROR_INVALID_STATE;
+    }
+
+    m_nrf_sdh_continue = true;
+
+    // Notify observers about SoftDevice enable request.
+    if (sdh_request_observer_notify(NRF_SDH_EVT_ENABLE_REQUEST) == NRF_ERROR_BUSY)
+    {
+        // Enable process was stopped.
+        return NRF_SUCCESS;
+    }
+
+    // Notify observers about starting SoftDevice enable process.
+    sdh_state_observer_notify(NRF_SDH_EVT_STATE_ENABLE_PREPARE);
+	//配置时钟源
+    nrf_clock_lf_cfg_t const clock_lf_cfg =
+    {
+        .source       = NRF_SDH_CLOCK_LF_SRC,
+        .rc_ctiv      = NRF_SDH_CLOCK_LF_RC_CTIV,
+        .rc_temp_ctiv = NRF_SDH_CLOCK_LF_RC_TEMP_CTIV,
+        .accuracy     = NRF_SDH_CLOCK_LF_ACCURACY
+    };
+
+    CRITICAL_REGION_ENTER(); //进入临界区
+#ifdef ANT_LICENSE_KEY
+    ret_code = sd_softdevice_enable(&clock_lf_cfg, app_error_fault_handler, ANT_LICENSE_KEY);
+#else
+    ret_code = sd_softdevice_enable(&clock_lf_cfg, app_error_fault_handler);
+#endif
+    m_nrf_sdh_enabled = (ret_code == NRF_SUCCESS);
+    CRITICAL_REGION_EXIT();////退出临界区
+
+    if (ret_code != NRF_SUCCESS)
+    {
+        return ret_code;
+    }
+
+    m_nrf_sdh_continue  = false;
+    m_nrf_sdh_suspended = false;
+
+    // Enable event interrupt.
+    // Interrupt priority has already been set by the stack.
+    softdevices_evt_irq_enable();
+
+    // Notify observers about a finished SoftDevice enable process.
+    sdh_state_observer_notify(NRF_SDH_EVT_STATE_ENABLED);
+
+    return NRF_SUCCESS;
+}
+```
+
+.source是选择时钟源，协议栈需要一个低频时钟源，时钟源有3种选择:
+
+// <0=> NRF_CLOCK_LF_SRC_RC : 内部RC时钟
+// <1=> NRF_CLOCK_LF_SRC_XTAL : 外部晶振时钟
+// <2=> NRF_CLOCK_LF_SRC_SYNTH : 从高速时钟合成的低速时钟
+
+内部RC时钟由内部RC时钟振荡器生成，如果需要使用内部RC时钟时，进行校准的时候芯片32MHz高速时钟必须运行，在4s间隔下将增加6到7ua的平均电流消耗。同时RC功能也消耗一点电流，因此相比于外部晶振将增加8到10ua的电流。
+
+外部晶振需要使用32.768KHz低速晶振，这种状态下电流消耗最低，同时要配置.accuracy参数，该参数代表外部时钟的精度。当选择外部晶振时.rc_ctiv, .rc_temp_ctiv参数必须为0.
+
+内部高速时钟合成，这种方式和RC时钟振荡器生成类似，需要高速时钟作为生成基础。这种方式电流消耗是最大的，功耗是最高的。
+
+.rc_ctiv：在0.25s单位下的校准时间间隔，为了避免过度的时间漂移，在一个刻度时间间隔下，最大的温度变化允许为0.5°。
+
+.rc_temp_ctiv: 温度变化下的校准间隔。
+
+在NRF52下推荐配置NRF_CLOCK_LF_SRC_RC为：rc_ctiv=16 and rc_temp_ctiv=2.
+
+2.nrf_sdh_ble_default_cfg_set(APP_BLE_CONN_CFG_TAG, &ram_start);协议栈初始化，为相应的蓝牙协议栈事件分配RAM空间。
+
+APP_BLE_CONN_CFG_TAG：表示连接参数配置标号
+
+ram_start：表示协议栈RAM起始地址。
+
+```c
+ret_code_t nrf_sdh_ble_default_cfg_set(uint8_t conn_cfg_tag, uint32_t * p_ram_start)
+{
+    uint32_t ret_code;
+
+    ret_code = nrf_sdh_ble_app_ram_start_get(p_ram_start);
+    if (ret_code != NRF_SUCCESS)
+    {
+        return ret_code;
+    }
+
+#if defined (S112) || defined(S312)
+    STATIC_ASSERT(NRF_SDH_BLE_CENTRAL_LINK_COUNT == 0, "When using s112, NRF_SDH_BLE_CENTRAL_LINK_COUNT must be 0.");
+#endif
+
+    // Overwrite some of the default settings of the BLE stack.
+    // If any of the calls to sd_ble_cfg_set() fail, log the error but carry on so that
+    // wrong RAM settings can be caught by nrf_sdh_ble_enable() and a meaningful error
+    // message will be printed to the user suggesting the correct value.
+    ble_cfg_t ble_cfg;
+
+#if (NRF_SDH_BLE_TOTAL_LINK_COUNT != 0)
+    // Configure the connection count.
+    memset(&ble_cfg, 0, sizeof(ble_cfg));
+    ble_cfg.conn_cfg.conn_cfg_tag                     = conn_cfg_tag;//设置连接标号，可以作为配置连接的标志，可以在创建连接的时候，使得sd_ble_gap_adv_start()和sd_ble_gap_connect()函数调用该配置
+    ble_cfg.conn_cfg.params.gap_conn_cfg.conn_count   = NRF_SDH_BLE_TOTAL_LINK_COUNT;//设置总连接数，该数目等于程序中设定的从机和主机的数目和
+    ble_cfg.conn_cfg.params.gap_conn_cfg.event_length = NRF_SDH_BLE_GAP_EVENT_LENGTH;//设置GAP事件长度，GAP事件长度是在蓝牙底层发送数据包时给的处理时间。如果数据MTU大的话，可以把数据处理时间设置长点。
+
+    ret_code = sd_ble_cfg_set(BLE_CONN_CFG_GAP, &ble_cfg, *p_ram_start);
+    if (ret_code != NRF_SUCCESS)
+    {
+        NRF_LOG_ERROR("sd_ble_cfg_set() returned %s when attempting to set BLE_CONN_CFG_GAP.",
+                      nrf_strerror_get(ret_code));
+    }
+
+    // Configure the connection roles.
+    memset(&ble_cfg, 0, sizeof(ble_cfg));
+    ble_cfg.gap_cfg.role_count_cfg.periph_role_count  = NRF_SDH_BLE_PERIPHERAL_LINK_COUNT;//从机数量
+#if !defined (S112) && !defined(S312)
+    ble_cfg.gap_cfg.role_count_cfg.central_role_count = NRF_SDH_BLE_CENTRAL_LINK_COUNT;//主机数量
+    ble_cfg.gap_cfg.role_count_cfg.central_sec_count  = MIN(NRF_SDH_BLE_CENTRAL_LINK_COUNT,
+                                                            BLE_GAP_ROLE_COUNT_CENTRAL_SEC_DEFAULT);
+#endif
+
+    ret_code = sd_ble_cfg_set(BLE_GAP_CFG_ROLE_COUNT, &ble_cfg, *p_ram_start);
+    if (ret_code != NRF_SUCCESS)
+    {
+        NRF_LOG_ERROR("sd_ble_cfg_set() returned %s when attempting to set BLE_GAP_CFG_ROLE_COUNT.",
+                      nrf_strerror_get(ret_code));
+    }
+
+    // Configure the maximum ATT MTU.
+#if (NRF_SDH_BLE_GATT_MAX_MTU_SIZE != 23)
+    memset(&ble_cfg, 0x00, sizeof(ble_cfg));
+    ble_cfg.conn_cfg.conn_cfg_tag                 = conn_cfg_tag;
+    ble_cfg.conn_cfg.params.gatt_conn_cfg.att_mtu = NRF_SDH_BLE_GATT_MAX_MTU_SIZE;//MTU(Maximum Transmission Unit, MTU)是指一种通信协议的某一层上面所能通过的最大数据包大小，单位是字节。因为协议数据单元的包头和包尾的长度是固定的，MTU越大，传送相同的用户数据所需的数据包个数也越低。早期蓝牙4.0的MTU为23个bytes，蓝牙5.0理论上可以设置672个字节。
+    ret_code = sd_ble_cfg_set(BLE_CONN_CFG_GATT, &ble_cfg, *p_ram_start);
+    if (ret_code != NRF_SUCCESS)
+    {
+        NRF_LOG_ERROR("sd_ble_cfg_set() returned %s when attempting to set BLE_CONN_CFG_GATT.",
+                      nrf_strerror_get(ret_code));
+    }
+#endif  // NRF_SDH_BLE_GATT_MAX_MTU_SIZE != 23
+#endif  // NRF_SDH_BLE_TOTAL_LINK_COUNT != 0
+
+    // Configure number of custom UUIDS.
+    memset(&ble_cfg, 0, sizeof(ble_cfg));
+    ble_cfg.common_cfg.vs_uuid_cfg.vs_uuid_count = NRF_SDH_BLE_VS_UUID_COUNT;//设置私有任务的UUID数目，也就是自定义的128bit的UUID数目。比如你定制了蓝牙串口和蓝牙LED两个主任务，每个主任务分配128bit UUID，这里NRF_SDH_BLE_VS_UUID_COUNT就设置为2，加入UUID服务后RAM使用空间要增加，RAM的空间也要修改。一个服务大概是0x10大小，RAM设置里增加对应的参数值。
+
+    ret_code = sd_ble_cfg_set(BLE_COMMON_CFG_VS_UUID, &ble_cfg, *p_ram_start);
+    if (ret_code != NRF_SUCCESS)
+    {
+        NRF_LOG_ERROR("sd_ble_cfg_set() returned %s when attempting to set BLE_COMMON_CFG_VS_UUID.",
+                      nrf_strerror_get(ret_code));
+    }
+
+    // Configure the GATTS attribute table.
+    memset(&ble_cfg, 0x00, sizeof(ble_cfg));
+    ble_cfg.gatts_cfg.attr_tab_size.attr_tab_size = NRF_SDH_BLE_GATTS_ATTR_TAB_SIZE;//GATT中，由Primary Service、Secondary Service和Characteristic构成了属于ATT protocol中定义的group of attributes，NRF_SDH_BLE_GATTS_ATTR_TAB_SIZE就是为了这些设置的数据分配一个空间。
+
+    ret_code = sd_ble_cfg_set(BLE_GATTS_CFG_ATTR_TAB_SIZE, &ble_cfg, *p_ram_start);
+    if (ret_code != NRF_SUCCESS)
+    {
+        NRF_LOG_ERROR("sd_ble_cfg_set() returned %s when attempting to set BLE_GATTS_CFG_ATTR_TAB_SIZE.",
+                      nrf_strerror_get(ret_code));
+    }
+
+    // Configure Service Changed characteristic.
+    memset(&ble_cfg, 0x00, sizeof(ble_cfg));
+    ble_cfg.gatts_cfg.service_changed.service_changed = NRF_SDH_BLE_SERVICE_CHANGED;
+
+    ret_code = sd_ble_cfg_set(BLE_GATTS_CFG_SERVICE_CHANGED, &ble_cfg, *p_ram_start);
+    if (ret_code != NRF_SUCCESS)
+    {
+        NRF_LOG_ERROR("sd_ble_cfg_set() returned %s when attempting to set BLE_GATTS_CFG_SERVICE_CHANGED.",
+                      nrf_strerror_get(ret_code));
+    }
+
+    return NRF_SUCCESS;
+}
+```
+
+NRF_SDH_BLE_PERIPHERAL_LINK_COUNT和NRF_SDH_BLE_CENTRAL_LINK_COUNT定义：
+
+1.作为从机
+
+#define NRF_SDH_BLE_CENTRAL_LINK_COUNT 	  0
+
+#define NRF_SDH_BLE_PERIPHERAL_LINK_COUNT 1
+
+(1个可使用从机进行连接的链路)
+
+2.作为主机
+
+#define NRF_SDH_BLE_CENTRAL_LINK_COUNT 	  1
+
+#define NRF_SDH_BLE_PERIPHERAL_LINK_COUNT 0
+
+(1个可使用主机进行连接的链路，也就是连接1路从机)
+
+3.作为主从一体机
+
+#define NRF_SDH_BLE_CENTRAL_LINK_COUNT 	  2
+
+#define NRF_SDH_BLE_PERIPHERAL_LINK_COUNT 1
+
+(2个可使用主机进行连接的链路，也就是作为主机连接2路从机，作为从机可连接1个主机)
+
+## 5.8GAP和GATT详解
+
+GAP(Generic Access Profile, GAP), 该Profile保证不同的Bluetooth产品可以互相发现对方并建立连接。
+
+GAP定义了蓝牙设备如何发现和建立与其它设备的安全或不安全连接。他处理一些一般模式的业务（如询问、命名和搜索）和一些安全性问题（如担保），同时还处理一些一般性的运行任务。因此，它具有强制性，并作为所有其它蓝牙应用规范的基础。
+
+```c
+static void gap_params_init(void)
+{
+    ret_code_t              err_code;
+    ble_gap_conn_params_t   gap_conn_params;
+    ble_gap_conn_sec_mode_t sec_mode;
+	//安全权限设置
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);//连接模式，主要是是否需要加密
+	//设备名称设置
+    err_code = sd_ble_gap_device_name_set(&sec_mode,
+                                          (const uint8_t *)DEVICE_NAME,
+                                          strlen(DEVICE_NAME));
+    APP_ERROR_CHECK(err_code);
+
+    /* YOUR_JOB: Use an appearance value matching the application's use case.应用图标值的设置，如果没有图标，可以不配置
+       err_code = sd_ble_gap_appearance_set(BLE_APPEARANCE_);
+       APP_ERROR_CHECK(err_code); */
+
+    memset(&gap_conn_params, 0, sizeof(gap_conn_params));
+
+    gap_conn_params.min_conn_interval = MIN_CONN_INTERVAL;
+    gap_conn_params.max_conn_interval = MAX_CONN_INTERVAL;
+    gap_conn_params.slave_latency     = SLAVE_LATENCY;
+    gap_conn_params.conn_sup_timeout  = CONN_SUP_TIMEOUT;
+
+    err_code = sd_ble_gap_ppcp_set(&gap_conn_params);
+    APP_ERROR_CHECK(err_code);
+}
+```
+
+GAP通常还会负责启动BLE连接的安全功能。只有对通过身份验证的连接而言某些数据是可读可写的。一旦形成一个连接，两个设备可以通过一个过程被称为配对。进行配对时，秘钥建立加密和认证的链接。在一个典型的案例，从机需要主机提供秘钥以完成配对过程。这可能是一个固定值，如“000000”，或可能是一个随机生成的值。主机发送正确秘钥后，两台设备交换安全秘钥加密和验证的链接。
+
+在许多情况下，主机和从机会经常断开、建立连接。BLE具有一个安全功能允许两个设备在配对的时候给对方一个长久的安全秘钥。这称为绑定，使两个重连设备能够快速重新确立加密和认证而不需要经过充分的配对过程，只要它们存储长期的秘钥信息。
+
+![image-20221002000744773](E:\databases\note\image-20221002000744773.png)
+
+安全连接模式分为7种：
+
+安全模式0水平0：不允许连接
+
+安全模式1水平1：无安全要求
+
+安全模式1水平2：需要加密链接（又称为直接打开链接）
+
+安全模式1水平3：加密链接和MITM保护
+
+安全模式1水平4：LESC加密链接和MITM保护
+
+安全模式2水平1：签名或者加密，无MITM保护
+
+安全模式2水平2：MITM保护签名或者加密链接
+
+默认蓝牙名称是显示英文的，直接把英文改成中文可能会导致蓝牙名称显示的时候出现乱码。要显示蓝牙名称为中文的步骤如下：
+
+新建main.h文件，定义蓝牙设备名称
+
+![image-20221002002447495](E:\databases\note\image-20221002002447495.png)
+
+加入头文件
+
+![image-20221002002600699](E:\databases\note\image-20221002002600699.png)
+
+在Misc Controls栏加入--locale=english
+
+![image-20221002002940375](E:\databases\note\image-20221002002940375.png)
+
+连接间隔：
+
+在一个BLE连接中，跳频机制需要被使用，这样两个设备之间可以在一个特定的通道上进行数据收发，在一个特定的时间之后会跳到一个新的通道上，LL层负责通道切换。
+
+这个遇见设备收到数据被称作是连接事件。
+
+尽管没有应用程序数据需要收发，两个设备之间仍然会交换链路层数据来保持连接。连接间隔是两个连接事件之间的时间，使用1.25ms的步进，最小值是6（6x1.25=7.5ms）到最大值3200（4s）。
+
+gap_conn_params.slave_latency从机潜伏周期：这个参数描述了从机跳过连接事件的次数。如果从机没有任何数据传送，它可以选择跳过连接事件，并保持睡眠。
+
+gap_conn_params.conn_sup_timeout监督超时：这是两个成功连接事件之间间隔的最大值。如果超过这个时间还未出现成功的连接事件，那么设备将会考虑失去连接，返回一个未连接状态。使用10ms步进，最小值是10（100ms）到最大值3200（32s）。同时超时时间必须大于有效连接事件。有效连接事件事件=连接间隔x(1+从机潜伏周期)。
+
+## 5.9广播初始化与广播切换
+
+```c
+static void advertising_init(void)
+{
+    ret_code_t             err_code;
+    ble_advertising_init_t init;
+
+    memset(&init, 0, sizeof(init));
+
+    init.advdata.name_type               = BLE_ADVDATA_FULL_NAME;//广播全名
+    init.advdata.include_appearance      = true;//是否需要图标
+    init.advdata.flags                   = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;//蓝牙设备模式
+    init.advdata.uuids_complete.uuid_cnt = sizeof(m_adv_uuids) / sizeof(m_adv_uuids[0]);
+    init.advdata.uuids_complete.p_uuids  = m_adv_uuids;
+
+    init.config.ble_adv_fast_enabled  = true;
+    init.config.ble_adv_fast_interval = APP_ADV_INTERVAL;
+    init.config.ble_adv_fast_timeout  = APP_ADV_DURATION;
+
+    init.evt_handler = on_adv_evt;
+
+    err_code = ble_advertising_init(&m_advertising, &init);
+    APP_ERROR_CHECK(err_code);
+
+    ble_advertising_conn_cfg_tag_set(&m_advertising, APP_BLE_CONN_CFG_TAG);//设置广播识别号
+}
+```
+
+蓝牙设备模式设置通过flags来进行标识：
+
+```c
+#define BLE_GAP_ADV_FLAG_LE_LIMITED_DISC_MODE         (0x01)   /**< LE Limited Discoverable Mode. *///LE有限发现模式
+#define BLE_GAP_ADV_FLAG_LE_GENERAL_DISC_MODE         (0x02)   /**< LE General Discoverable Mode. *///LE普通发现模式
+#define BLE_GAP_ADV_FLAG_BR_EDR_NOT_SUPPORTED         (0x04)   /**< BR/EDR not supported. *///不支持BR/EDR模式
+#define BLE_GAP_ADV_FLAG_LE_BR_EDR_CONTROLLER         (0x08)   /**< Simultaneous LE and BR/EDR, Controller. *///同时支持BLE和EDR模式（控制器）
+#define BLE_GAP_ADV_FLAG_LE_BR_EDR_HOST               (0x10)   /**< Simultaneous LE and BR/EDR, Host. *///同时支持BLE和BR/EDR模式（主机）
+#define BLE_GAP_ADV_FLAGS_LE_ONLY_LIMITED_DISC_MODE   (BLE_GAP_ADV_FLAG_LE_LIMITED_DISC_MODE | BLE_GAP_ADV_FLAG_BR_EDR_NOT_SUPPORTED)   /**< LE Limited Discoverable Mode, BR/EDR not supported. */
+#define BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE   (BLE_GAP_ADV_FLAG_LE_GENERAL_DISC_MODE | BLE_GAP_ADV_FLAG_BR_EDR_NOT_SUPPORTED)   /**< LE General Discoverable Mode, BR/EDR not supported. */
+```
+
+
+
+# 6.AutoCAD学习笔记
+
+## 6.1画线
+
+CAD画线快捷键是L+空格
+
+![image-20220923002433384](E:\databases\note\image-20220923002433384.png)
+
+输入坐标20,30。其中x=20，y=30
+
+![image-20220923002636309](E:\databases\note\image-20220923002636309.png)
+
+相对于上次坐标的坐标偏移设置，相当于x=20+20=40，y=30+30=60
+
+![image-20220923002845050](E:\databases\note\image-20220923002845050.png)
+
+20<30。20表示该点到坐标原点的距离，30表示该点与原点连线和X轴正向夹角为30°
+
+![image-20220923003007832](E:\databases\note\image-20220923003007832.png)
+
+@20<60。20表示该点与前一点距离为20，60表示该点与前一点连线和X轴正向夹角为60°
+
+![image-20220923004708844](E:\databases\note\image-20220923004708844.png)
+
+## 6.2图形单位设置
+
+设置图形单位快捷键UN+空格
+
+![image-20220924001703817](E:\databases\note\image-20220924001703817.png)
+
+## 6.3设置图形界面
+
+A3图形大小：420x297
+
+A4图形大小：297x210
+
+设置A4图形界面：
+
+输入LIMITS+空格，输入图形左下点坐标+空格，输入图形右上角+空格
+
+## 6.4设置图层
+
+点击图层特性，打开图层设置
+
+![image-20220924003544415](E:\databases\note\image-20220924003544415.png)
+
+点击图标添加图层
+
+![image-20220924003733095](E:\databases\note\image-20220924003733095.png)
+
+## 6.5设置样板图
+
+设置样板图步骤：
+
+1.设置单位（UN+Space）
+
+2.设置图形界面（LIMITS+Space）
+
+3.添加图层
+
+4.保存文件为.dwt格式
