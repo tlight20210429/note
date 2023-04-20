@@ -1458,6 +1458,24 @@ git reset HEAD filename
 git restore filename
 ```
 
+#### 4.3.4.3更改提交信息
+
+1.更改最后一次提交信息方式
+
+```c
+git commit --amend
+```
+
+该命令输入后进入VIM编辑界面，在该界面修改提交信息，如果已经提交到远程库，可以使用命令：
+
+```
+git push origin -f
+```
+
+将修改信息强制推送到远程库。
+
+2.
+
 ### 4.3.5git忽略文件
 
 git忽略文件可以在和.git同一目录下新建文件.gitignore实现。但是.gitignore只能忽略未被git跟踪的文件，如果文件已被跟踪则需要使用git rm --cached filename取消git跟踪才行。
@@ -1501,6 +1519,26 @@ doc/**/*.pdf
 *.[oa]
 #忽略所有以~结尾的文件
 *~
+```
+
+### 4.3.6git取消文件追踪
+
+git取消文件追踪，但不删除文件
+
+```shell
+git rm --cached file
+```
+
+git取消文件夹追踪，但不删除文件
+
+```shell
+git rm -r --cached dir
+```
+
+git取消文件追踪并删除本地文件
+
+```shell
+git rm --f file
 ```
 
 GitHub 有一个十分详细的针对数十种项目及语言的 .gitignore 文件列表， 你可以在 https://github.com/github/gitignore 找到它。
@@ -1812,6 +1850,10 @@ usb_drivers文件夹提供usb驱动设备声明
 5.external文件夹提供了一些第三方驱动
 
 6.external_tools文件夹用来放置一些外部工具包，目前该文件夹只包含了CMSIS的配置向导
+
+7.integration文件夹提供老版本驱动兼容头文件
+
+8.modules->nrfx->drivers最新版的驱动文件，modules->nrfx->hal老版本硬件配置头文件
 
 ## 5.2蓝牙协议栈结构
 
@@ -2314,10 +2356,10 @@ static void advertising_init(void)
     init.advdata.uuids_complete.p_uuids  = m_adv_uuids;
 
     init.config.ble_adv_fast_enabled  = true;
-    init.config.ble_adv_fast_interval = APP_ADV_INTERVAL;
-    init.config.ble_adv_fast_timeout  = APP_ADV_DURATION;
+    init.config.ble_adv_fast_interval = APP_ADV_INTERVAL;//蓝牙广播间隔
+    init.config.ble_adv_fast_timeout  = APP_ADV_DURATION;//蓝牙广播超时时间，如果希望一直广播，这里置0并且上面的蓝牙设备模式要设置为普通发现模式，不支持BR/EDR
 
-    init.evt_handler = on_adv_evt;
+    init.evt_handler = on_adv_evt;//蓝牙广播模式设置成功回调函数
 
     err_code = ble_advertising_init(&m_advertising, &init);
     APP_ERROR_CHECK(err_code);
@@ -2337,6 +2379,1800 @@ static void advertising_init(void)
 #define BLE_GAP_ADV_FLAGS_LE_ONLY_LIMITED_DISC_MODE   (BLE_GAP_ADV_FLAG_LE_LIMITED_DISC_MODE | BLE_GAP_ADV_FLAG_BR_EDR_NOT_SUPPORTED)   /**< LE Limited Discoverable Mode, BR/EDR not supported. */
 #define BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE   (BLE_GAP_ADV_FLAG_LE_GENERAL_DISC_MODE | BLE_GAP_ADV_FLAG_BR_EDR_NOT_SUPPORTED)   /**< LE General Discoverable Mode, BR/EDR not supported. */
 ```
+
+LE有限发现模式和LE普通发现模式是有区别的，有限发现模式下，设备广播间隔比一般发现模式小，同时持续时间有限。而普通发现模式没有时间限制，如果需要设备一直不停广播不休眠就必须设置为普通发现模式。
+
+蓝牙BR/EDR（蓝牙基本速率/增强数据率），其数据吞吐量更高，功耗也会相应增加。
+
+## 5.10profile私有服务建立
+
+BLE私有服务这里用一个led点灯例子举例。
+
+在ble_servers文件夹下新建ble_leds文件夹，添加文件ble_led.c, ble_led.h文件。
+
+```c
+#ifndef __BLE_LED_H__
+#define __BLE_LED_H__
+
+#include <stdint.h>
+#include <stdbool.h>
+#include "ble.h"
+#include "nrf_sdh_ble.h"
+
+
+#ifdef __cplusplus
+#if __cplusplus
+extern "C"{
+#endif
+#endif /* __cplusplus */
+
+/**@brief	Macro for defining a ble_led instance.定义一个LED服务实例
+ *
+ * @param	_name	Name of the instance.
+ * @hideinitializer
+ */
+#define BLE_LED_DEF(_name)                                                                          \
+	static ble_led_t _name; 																			\
+	NRF_SDH_BLE_OBSERVER(_name ## _obs, 																\
+						 BLE_LBS_BLE_OBSERVER_PRIO, 													\
+						 ble_led_on_ble_evt, &_name)
+
+#define BLE_LED_UUID_BASE 		{0xD3, 0xBC, 0x30, 0xB2, 0xB1, 0xD9, 0x59, 0xB4, 0xC4, 0x44, 0xCC, 0xF9, 0x00, 0x00, 0x60, 0xB5}//定义UUID
+
+#define BLE_LED_UUID_SERVICE	0x1523    //定义LED服务UUID
+#define BLE_LED_UUID_CHAR		0x1524    //定义LED特征UUID
+
+typedef struct ble_led ble_led_t;
+typedef void (*ble_led_write_handler_t)(uint16_t conn_handle, ble_led_t *p_led, uint8_t new_state);
+typedef struct
+{
+	ble_led_write_handler_t led_write_handler;
+}ble_led_init_t;
+struct ble_led
+{
+	uint16_t service_handle;
+	ble_gatts_char_handles_t led_char_handles;
+	uint8_t uuid_type;
+	ble_led_write_handler_t led_write_handler;
+};//定义LED服务结构体
+
+uint32_t ble_led_init(ble_led_t *p_led, const ble_led_init_t *p_led_init);
+void ble_led_on_ble_evt(ble_evt_t const *p_ble_evt, void *p_context);
+
+#ifdef __cplusplus
+#if __cplusplus
+}
+#endif
+#endif /* __cplusplus */
+
+
+#endif /* __BLE_LED_H__ */
+
+```
+
+定义UUID需要使用nRFgo工具生成UUID，步骤如下：
+
+![image-20221024003340007](E:\databases\note\image-20221024003340007.png)
+
+点击nRF8001 Setup下拉菜单的Edit 128 bit UUIDs...，在打开的页面点击Add new新增UUID
+
+![image-20221024003610613](E:\databases\note\image-20221024003610613.png)
+
+将UUID复制到代码里并倒序定义，xxxx处直接用0代替。
+
+![image-20221024003736735](E:\databases\note\image-20221024003736735.png)
+
+.c文件里编写如下内容：
+
+```c
+#include "ble_led.h"
+#include "sdk_common.h"
+
+static void led_on_write(ble_led_t * p_led, ble_evt_t const * p_ble_evt)
+{
+    ble_gatts_evt_write_t const * p_evt_write = &p_ble_evt->evt.gatts_evt.params.write;
+	
+    if (   (p_evt_write->handle == p_led->led_char_handles.value_handle)
+        && (p_evt_write->len == 1)
+        && (p_led->led_write_handler != NULL))
+    {
+        p_led->led_write_handler(p_ble_evt->evt.gap_evt.conn_handle, p_led, p_evt_write->data[0]);
+    }
+}
+
+
+uint32_t ble_led_init(ble_led_t *p_led, const ble_led_init_t *p_led_init)
+{
+	uint32_t err_code;
+	ble_uuid_t ble_uuid;
+	ble_gatts_char_md_t ble_led_char_param;
+	ble_gatts_attr_md_t ble_led_attr_param;
+	ble_gatts_attr_t ble_led_char_value;
+	ble_uuid128_t base_uuid = BLE_LED_UUID_BASE;
+	
+	p_led->led_write_handler = p_led_init->led_write_handler;
+	
+	//向协议栈添加LED base uuid
+	err_code = sd_ble_uuid_vs_add(&base_uuid, &p_led->uuid_type);
+	VERIFY_SUCCESS(err_code);
+	ble_uuid.type = p_led->uuid_type;
+	ble_uuid.uuid = BLE_LED_UUID_SERVICE;
+	//向协议栈添加服务
+	err_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &ble_uuid, &p_led->service_handle);
+	VERIFY_SUCCESS(err_code);
+	//向协议栈添加特征值
+	memset(&ble_led_char_param, 0, sizeof(ble_gatts_char_md_t));
+	memset(&ble_led_attr_param, 0, sizeof(ble_gatts_attr_md_t));
+	memset(&ble_led_char_value, 0, sizeof(ble_gatts_attr_t));
+	ble_led_char_param.char_props.write = 1; //允许无回复的写
+	ble_led_char_param.char_props.read = 1;  //允许读
+	ble_led_char_param.p_char_user_desc = NULL;
+	ble_led_char_param.p_char_pf = NULL;
+	ble_led_char_param.p_user_desc_md = NULL;
+	ble_led_char_param.p_cccd_md = NULL;
+	ble_led_char_param.p_sccd_md = NULL;
+	ble_uuid.type = p_led->uuid_type;
+	ble_uuid.uuid = BLE_LED_UUID_CHAR;
+	BLE_GAP_CONN_SEC_MODE_SET_OPEN(&ble_led_attr_param.read_perm);
+	BLE_GAP_CONN_SEC_MODE_SET_OPEN(&ble_led_attr_param .write_perm);
+	ble_led_attr_param.vloc = BLE_GATTS_VLOC_STACK;
+	ble_led_char_value.p_uuid = &ble_uuid;
+	ble_led_char_value.p_attr_md = &ble_led_attr_param;
+	ble_led_char_value.init_len = sizeof(uint8_t);
+	ble_led_char_value.init_offs = 0;
+	ble_led_char_value.max_len = sizeof(uint8_t);
+	ble_led_char_value.p_value = NULL;
+	err_code = sd_ble_gatts_characteristic_add(p_led->service_handle, &ble_led_char_param, &ble_led_char_value, &p_led->led_char_handles);
+	VERIFY_SUCCESS(err_code);
+	
+	return NRF_SUCCESS;
+}
+
+void ble_led_on_ble_evt(ble_evt_t const *p_ble_evt, void *p_context)
+{
+	switch (p_ble_evt->header.evt_id)
+	{
+		case BLE_GATTS_EVT_WRITE:
+			led_on_write((ble_led_t *)p_context, p_ble_evt);
+			break;
+		default:
+			break;
+	}
+}
+```
+
+应用层：
+
+1.声明LED服务实例
+
+![image-20221027010826525](E:\databases\note\image-20221027010826525.png)
+
+2.添加服务
+
+![image-20221027010948906](E:\databases\note\image-20221027010948906.png)
+
+3.添加广播内容
+
+![image-20221027011054689](E:\databases\note\image-20221027011054689.png)
+
+![image-20221027011141739](E:\databases\note\image-20221027011141739.png)
+
+4.编译下载运行，如果提示内存不足就根据提示增加内存就可以了。
+
+## 5.11抓包工具下载安装配置
+
+这里参考官方教程https://infocenter.nordicsemi.com/index.jsp?topic=%2Fug_sniffer_ble%2FUG%2Fsniffer_ble%2Fintro.html&cp=11_5编写。
+
+![image-20230327174131620](E:\databases\note\image-20230327174131620.png)
+
+1.下载安装wireshark抓包工具，安装过程要勾选Install USBPcap，其它一路点next就可以。
+
+![image-20230327172416300](E:\databases\note\image-20230327172416300.png)
+
+2.安装nRF Sniffer，官网下载nRF Sniffer capture tool，下载后解压，在extcap文件夹里打开cmd窗口执行命令
+
+py -3 -m pip install -r requirements.txt.安装pyserial，安装成功如图所示
+
+![image-20230327172910378](E:\databases\note\image-20230327172910378.png)
+
+3.复制extcap文件夹下所有文件和目录，打开wireshark菜单栏帮助>关于wireshark(A)双击Personal Extcap path路径创建目录，将先前复制的内容粘贴到这里，并在这里打开cmd窗口执行命令nrf_sniffer_ble.bat --extcap-interfaces
+
+![image-20230327173307462](E:\databases\note\image-20230327173307462.png)
+
+出现以下信息代表安装成功
+
+![image-20230327173545995](E:\databases\note\image-20230327173545995.png)
+
+4.点击使能wireshark菜单栏视图>接口工具栏>**nRF Sniffer for Bluetooth LE**，然后按F5或者点击菜单栏捕获>刷新接口列表刷新接口就可以看到**nRF Sniffer for Bluetooth LE COM**了。
+
+![image-20230327173940375](E:\databases\note\image-20230327173940375.png)
+
+## 5.12广播包解析
+
+参考连接https://blog.csdn.net/qq_26226375/article/details/128129273?spm=1001.2101.3001.6650.5&utm_medium=distribute.pc_relevant.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-5-128129273-blog-111901325.235%5Ev27%5Epc_relevant_3mothn_strategy_and_data_recovery&depth_1-utm_source=distribute.pc_relevant.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-5-128129273-blog-111901325.235%5Ev27%5Epc_relevant_3mothn_strategy_and_data_recovery&utm_relevant_index=10
+
+广播类型主要有9种：
+
+ADV_IND：通用广播，该广播最常用，可被连接和扫描
+
+ADV_DIRECT_IND: 定向广播，该广播只能被指定设备发现
+
+ADV_NONCONNN_IND: 非连接广播，该广播不能被其它设备连接
+
+SCAN_REQ: 主机扫描包，当主机收到从机广播包后，由主机发出扫描包
+
+AUX_SCAN_REQ:  扫描请求扩展包，该包由主机发出，不在传统广播信道37,38,39上，而在其它数据信道上。
+
+SCAN_RSP:	扫描响应包，从机收到主机的SCAN_REQ包后，给主机一个SCAN_RSP包，让主机获取更多广播数据。
+
+CONNECT_IND:	连接包，由主机发出
+
+AUX_CONNECT_REQ:	连接请求扩展包，该包由主机发出，不在传统广播信道37,38,39上，而在其它数据信道上。
+
+ADV_SCAN_IND:	可扫描非定向广播包，有从机发出。
+
+![image-20230408161804420](E:\databases\note\image-20230408161804420.png)
+
+### 5.12.1 ADV_IND: 通用广播
+
+![image-20230329112438884](E:\databases\note\image-20230329112438884.png)
+
+byte0~byte16: 这是wrieshark工具生成内容，其中byte9是广播信道。
+
+byte17~byte55: 这是广播包内容。
+
+byte17~byte20: 广播接入地址，为固定值。
+
+byte21~byte22: 这是PDU包头。
+
+byte23~byte28: 这是蓝牙MAC地址。
+
+byte29~byte52: 这是数据结构部分。
+
+byte29~byte32: 这是第一组数据，byte29是length，byte30是AD Type，byte31和byte32是数据。
+
+byte33~byte35: 这是第二组数据，byte33是length，byte34是AD Type，byte35是数据。
+
+byte36~byte52: 这是第三组数据，byte36是length，byte37是AD Type，byte38~byte52是数据。
+
+byte53~byte55: 这是CRC检验码。
+
+### 5.12.2 SCAN_REQ: 扫描请求帧
+
+![image-20230329113736943](E:\databases\note\image-20230329113736943.png)
+
+byte0~byte16: 这是wrieshark工具生成内容，其中byte9是广播信道。
+
+byte17~byte20: 广播接入地址，为固定值。
+
+byte21~byte22: 这是PDU包头。
+
+byte23~byte28: 这是主机MAC地址。
+
+byte29~byte34: 这是蓝牙MAC地址。
+
+byte35~byte37: 这是CRC校验码。
+
+### 5.12.3 SCAN_RSP: 扫描响应帧
+
+![image-20230329114350292](E:\databases\note\image-20230329114350292.png)
+
+byte0~byte16: 这是wrieshark工具生成内容，其中byte9是广播信道。
+
+byte17~byte49: 这是广播包内容。
+
+byte17~byte20: 广播接入地址，为固定值。
+
+byte21~byte22: 这是PDU包头。
+
+byte23~byte28: 这是蓝牙MAC地址。
+
+byte29~byte46: byte29是length，byte30是AD Type，byte31~byte46是数据。
+
+byte47~byte49: 这是CRC检验码。
+
+### 5.12.4 CONNECT_IND: 连接请求包
+
+![image-20230329115044735](E:\databases\note\image-20230329115044735.png)
+
+byte0~byte16: 这是wrieshark工具生成内容，其中byte9是广播信道。
+
+byte17~byte20: 广播接入地址，为固定值。
+
+byte21~byte22: 这是PDU包头。
+
+byte23~byte28: 这是主机MAC地址。
+
+byte29~byte34: 这是蓝牙MAC地址。
+
+byte35~byte37: 这是CRC校验码。
+
+
+
+AD Type：广播数据类型
+
+0x07: 128bit service class uuids
+
+0x08: Device Name(shortened)
+
+0x09: Device Name
+
+0x16: service data
+
+0xff: Manufacturer Specific
+
+## 5.13在广播包里添加service data
+
+![image-20230329173842953](E:\databases\note\image-20230329173842953.png)
+
+![image-20230329173918797](E:\databases\note\image-20230329173918797.png)
+
+如果是扫描回应包SCAN_RSP，只需要将
+
+```c
+init.advdata.service_data_count = 1;
+init.advdata.p_service_data_array = &service_data;
+改为
+init.srdata.service_data_count = 1;
+init.srdata.p_service_data_array = &service_data;
+即可
+或者按以下方式改也行：
+static void advertising_init(void)
+{
+    ret_code_t             err_code;
+    ble_advertising_init_t init;
+	ble_advertising_t            *p_advertising = &m_advertising;
+	ble_uuid_t adv_uuids[] = {{LED_KEY_UUID_SERVICE, mUser_led_key_id.uuid_type}};
+	ble_advdata_manuf_data_t manuf_data = {0x004c, {sizeof("hello nor")-1, "hello nor"}};
+    memset(&init, 0, sizeof(init));
+
+    init.advdata.name_type               = BLE_ADVDATA_SHORT_NAME;
+	init.advdata.short_name_len = 6;
+    init.advdata.include_appearance      = true;
+    init.advdata.flags                   = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
+    init.srdata.uuids_complete.uuid_cnt = sizeof(adv_uuids) / sizeof(adv_uuids[0]);
+    init.srdata.uuids_complete.p_uuids  = adv_uuids;
+
+    init.config.ble_adv_fast_enabled  = true;
+    init.config.ble_adv_fast_interval = APP_ADV_INTERVAL;
+    init.config.ble_adv_fast_timeout  = APP_ADV_DURATION;
+
+    init.evt_handler = on_adv_evt;
+	init.advdata.p_manuf_specific_data = &manuf_data;
+    err_code = ble_advertising_init(&m_advertising, &init);
+    APP_ERROR_CHECK(err_code);
+    ble_advertising_conn_cfg_tag_set(&m_advertising, APP_BLE_CONN_CFG_TAG);
+}
+```
+
+## 5.13添加BLE按键通知
+
+在新建的私有服务user_led_key.c文件里添加如下代码
+
+```c
+uint32_t led_ble_init(user_led_key_t *p_led, const led_init_t *p_led_init)
+{
+	uint32_t err_code;
+	ble_uuid_t	ble_uuid;
+	ble_add_char_params_t add_char_params;
+	ble_uuid128_t base_uuid = {LED_KEY_BASE_UUID};
+
+	//1.register UUID
+	p_led->led_write_handler = p_led_init->led_write_handler;
+	err_code = sd_ble_uuid_vs_add(&base_uuid, &p_led->uuid_type);
+	VERIFY_SUCCESS(err_code);
+	//2.add service
+	ble_uuid.type = p_led->uuid_type;
+	ble_uuid.uuid = LED_KEY_UUID_SERVICE;
+	err_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY, &ble_uuid, &p_led->service_handle);
+	VERIFY_SUCCESS(err_code);
+	//3.set char params
+	memset(&add_char_params, 0, sizeof(ble_add_char_params_t));
+	add_char_params.uuid = KEY_CHAR_UUID;
+	add_char_params.uuid_type = p_led->uuid_type;
+	add_char_params.init_len = 1;
+	add_char_params.max_len = 1;
+	add_char_params.char_props.read = 1;
+	add_char_params.char_props.notify = 1;
+	add_char_params.read_access = SEC_OPEN;
+	add_char_params.cccd_write_access = SEC_OPEN;
+	
+	return characteristic_add(p_led->service_handle, &add_char_params, &p_led->key_char_handles);
+}
+
+uint32_t key_on_ble_changed(uint16_t conn_handle, user_led_key_t *p_key, uint8_t button_state)
+{
+	ble_gatts_hvx_params_t params;
+	uint16_t len = sizeof(button_state);
+	
+	memset(&params, 0, sizeof(ble_gatts_hvx_params_t));
+	params.type = BLE_GATT_HVX_NOTIFICATION;
+	params.handle = p_key->key_char_handles.value_handle;
+	params.p_data = &button_state;
+	params.p_len = &len;
+
+	return sd_ble_gatts_hvx(conn_handle, &params);
+}
+```
+
+在main.c文件里的按键回调函数调用key_on_ble_changed函数，APP端连接后使能通知功能即可。
+
+```c
+static void bsp_event_handler(bsp_event_t event)
+{
+    ret_code_t err_code;
+
+    switch (event)
+    {
+        case BSP_EVENT_SLEEP:
+            sleep_mode_enter();
+            break; // BSP_EVENT_SLEEP
+
+        case BSP_EVENT_DISCONNECT:
+            err_code = sd_ble_gap_disconnect(m_conn_handle,
+                                             BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
+            if (err_code != NRF_ERROR_INVALID_STATE)
+            {
+                APP_ERROR_CHECK(err_code);
+            }
+            break; // BSP_EVENT_DISCONNECT
+
+        case BSP_EVENT_WHITELIST_OFF:
+            if (m_conn_handle == BLE_CONN_HANDLE_INVALID)
+            {
+                err_code = ble_advertising_restart_without_whitelist(&m_advertising);
+                if (err_code != NRF_ERROR_INVALID_STATE)
+                {
+                    APP_ERROR_CHECK(err_code);
+                }
+            }
+            break; // BSP_EVENT_KEY_0
+		case BSP_EVENT_KEY_0:
+			NRF_LOG_INFO("BSP_EVENT_KEY_0 PUSH");
+			break;
+		case BSP_EVENT_KEY_1:
+			NRF_LOG_INFO("BSP_EVENT_KEY_1 RELEASE");
+			mUser_key_state = !mUser_key_state;
+			err_code = key_on_ble_changed(m_conn_handle, &mUser_led_key_id, mUser_key_state);
+			if (err_code != NRF_SUCCESS &&
+                err_code != BLE_ERROR_INVALID_CONN_HANDLE &&
+                err_code != NRF_ERROR_INVALID_STATE &&
+                err_code != BLE_ERROR_GATTS_SYS_ATTR_MISSING)
+			{
+				APP_ERROR_CHECK(err_code);
+            }
+			break;
+		case BSP_EVENT_KEY_2:
+			NRF_LOG_INFO("BSP_EVENT_KEY_2 LONG PUSH");
+			break;
+        default:
+            break;
+    }
+}
+```
+
+
+
+## 5.14添加BLE指示功能
+
+## 5.15添加BLE电池电量服务
+
+### 5.15.1在工程中加入官方写好的服务，使能电池电量检测模块
+
+![image-20230330110503163](E:\databases\note\image-20230330110503163.png)
+
+![image-20230330151052866](E:\databases\note\image-20230330151052866.png)
+
+![image-20230330161212441](E:\databases\note\image-20230330161212441.png)
+
+saadc初始化：可以参考es_battery_voltage_saadc.c或者example/peripheral/saadc/main.c
+
+```c
+#define SAMPLES_IN_BUFFER 1
+static nrf_saadc_value_t adc_buf[SAMPLES_IN_BUFFER];
+
+void battery_check_init(nrf_drv_saadc_event_handler_t        event_handler)
+{
+    nrf_saadc_channel_config_t channel_config = NRF_DRV_SAADC_DEFAULT_CHANNEL_CONFIG_SE(NRF_SAADC_INPUT_AIN2);
+	ret_code_t err_code = nrf_drv_saadc_init(NULL, event_handler);
+
+    APP_ERROR_CHECK(err_code);
+
+    err_code = nrf_drv_saadc_channel_init(2, &channel_config);
+    APP_ERROR_CHECK(err_code);
+
+    err_code = nrf_drv_saadc_buffer_convert(adc_buf, SAMPLES_IN_BUFFER);//只有采样满SAMPLES_IN_BUFFER才会触发event_handler
+    APP_ERROR_CHECK(err_code);
+
+}
+```
+
+定义ADC采样回调函数：
+
+```c
+void battery_saadc_callback(nrf_drv_saadc_evt_t const * p_event)
+{
+	int i;
+	ret_code_t err_code;
+	nrf_saadc_value_t adc_result;
+	uint16_t batt_lvl_in_milli_volts;
+	uint8_t percentage_batt_lvl;
+	
+    if (p_event->type == NRF_DRV_SAADC_EVT_DONE)
+    {
+		adc_result = p_event->data.done.p_buffer[SAMPLES_IN_BUFFER-1];
+		err_code = nrfx_saadc_buffer_convert(p_event->data.done.p_buffer, SAMPLES_IN_BUFFER);
+        APP_ERROR_CHECK(err_code);
+		//adc value to vbat value
+		batt_lvl_in_milli_volts = ADC_RESULT_IN_MILLI_VOLTS(adc_result)+DIODE_FWD_VOLT_DROP_MILLIVOLTS;
+		percentage_batt_lvl = battery_level_in_percent(batt_lvl_in_milli_volts);
+		//vbat value send master by ble
+		err_code = ble_bas_battery_level_update(&m_bas_id, percentage_batt_lvl, BLE_CONN_HANDLE_ALL);
+		if((err_code != NRF_SUCCESS)&&
+			(err_code != NRF_ERROR_INVALID_STATE)&&
+			(err_code != NRF_ERROR_RESOURCES)&&
+			(err_code != NRF_ERROR_BUSY)&&
+			(err_code != BLE_ERROR_GATTS_SYS_ATTR_MISSING))
+		{
+			APP_ERROR_HANDLER(err_code);
+		}
+	}
+}
+```
+
+添加服务：
+
+```c
+BLE_BAS_DEF(m_bas_id);
+ble_bas_init_t bas_init;
+memset(&bas_init, 0, sizeof(ble_bas_init_t));
+bas_init.evt_handler = ble_bas_evt_handler;
+bas_init.support_notification = 1;
+bas_init.initial_batt_level = 100;
+bas_init.bl_cccd_wr_sec = SEC_OPEN;
+bas_init.bl_rd_sec = SEC_OPEN;
+ble_bas_init(&m_bas_id, &bas_init);
+```
+
+## 5.16添加心率服务
+
+添加文件，使能心率模块
+
+![image-20230331164737334](E:\databases\note\image-20230331164737334.png)
+
+添加服务
+
+```c
+static void services_init(void)
+{
+    ble_bas_init_t bas_init;
+    ble_hrs_init_t hrs_init;
+    ble_dis_init_t dis_init;
+    uint8_t body_sensor_location;
+    ....
+    memset(&bas_init, 0, sizeof(ble_bas_init_t));
+    bas_init.evt_handler = NULL;
+    bas_init.support_notification = true;
+    bas_init.p_report_ref = NULL;
+    bas_init.initial_batt_level = 100;
+    bas_init.bl_cccd_wr_sec = SEC_OPEN;
+    bas_init.bl_rd_sec = SEC_OPEN;
+    bas_init.bl_report_rd_sec = SEC_OPEN;
+    ble_bas_init(&m_bas_id, &bas_init);
+
+    body_sensor_location = BLE_HRS_BODY_SENSOR_LOCATION_FINGER;
+    memset(&hrs_init, 0, sizeof(ble_hrs_init_t));
+
+    hrs_init.evt_handler = NULL;
+    hrs_init.is_sensor_contact_supported = true;
+    hrs_init.p_body_sensor_location = &body_sensor_location;
+    hrs_init.hrm_cccd_wr_sec = SEC_OPEN;
+    hrs_init.bsl_rd_sec = SEC_OPEN;
+    ble_hrs_init(&m_hrs_id, &hrs_init);
+    APP_ERROR_CHECK(err_code);
+
+    memset(&dis_init, 0, sizeof(ble_dis_init_t));
+    ble_srv_ascii_to_utf8(&dis_init.manufact_name_str, (char *)MANUFACTURER_NAME);
+    dis_init.dis_char_rd_sec = SEC_OPEN;
+    err_code = ble_dis_init(&dis_init);
+    APP_ERROR_CHECK(err_code);
+    ...
+}
+```
+
+配置定时器
+
+```c
+//1.声明定时器
+#define BATTERY_LEVEL_MEAS_INTERVAL		APP_TIMER_TICKS(2000)
+#define MIN_BATTERY_LEVEL	0
+#define MAX_BATTERY_LEVEL	100
+#define BATTERY_LEVEL_INCREMENT	1
+
+#define HEART_RATE_MEAS_INTERVAL	APP_TIMER_TICKS(1000)
+#define MIN_HEART_RATE	140
+#define MAX_HEART_RATE	300
+#define HEART_RATE_INCREMENT	10
+
+#define RR_INTERVAL_MEAS_INTERVAL	APP_TIMER_TICKS(300)
+#define MIN_RR_INTERVAL	100
+#define MAX_RR_INTERVAL	500
+#define RR_INTERVAL_INCREMENT	1
+
+#define SENSOR_CONTACT_DETECTED_INTERVAL	APP_TIMER_TICKS(5000)
+
+APP_TIMER_DEF(mUser_battery_timer_id);
+APP_TIMER_DEF(mUser_heart_timer_id);
+APP_TIMER_DEF(mUser_rr_timer_id);
+APP_TIMER_DEF(mUser_sensor_timer_id);
+//2.定时器初始化
+static void timers_init(void)
+{
+    // Initialize timer module.
+    ...
+       ret_code_t err_code;
+       err_code = app_timer_create(&m_app_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_handler);
+       APP_ERROR_CHECK(err_code); */
+       err_code = app_timer_create(&mUser_battery_timer_id, APP_TIMER_MODE_REPEATED, mUser_battery_timeout_handler);
+       APP_ERROR_CHECK(err_code);
+	   err_code = app_timer_create(&mUser_heart_timer_id, APP_TIMER_MODE_REPEATED, mUser_heart_timeout_handler);
+       APP_ERROR_CHECK(err_code);
+	   err_code = app_timer_create(&mUser_rr_timer_id, APP_TIMER_MODE_REPEATED, mUser_rr_timeout_handler);
+       APP_ERROR_CHECK(err_code);
+	   err_code = app_timer_create(&mUser_sensor_timer_id, APP_TIMER_MODE_REPEATED, mUser_sensor_timeout_handler);
+       APP_ERROR_CHECK(err_code);
+}
+//3.编写定时器回调函数
+void mUser_battery_timeout_handler(void * p_context)
+{
+	UNUSED_PARAMETER(p_context);
+	ret_code_t err_code;
+	uint8_t battery_level;
+
+	battery_level = (uint8_t)sensorsim_measure(&m_battery_sim_state, &m_battery_sim_cfg);
+	err_code = ble_bas_battery_level_update(&m_bas_id, battery_level, BLE_CONN_HANDLE_ALL);
+	if((err_code != NRF_SUCCESS)&&
+			(err_code != NRF_ERROR_INVALID_STATE)&&
+			(err_code != NRF_ERROR_RESOURCES)&&
+			(err_code != NRF_ERROR_BUSY)&&
+			(err_code != BLE_ERROR_GATTS_SYS_ATTR_MISSING))
+		{
+			APP_ERROR_HANDLER(err_code);
+		}
+	//err_code = nrf_drv_saadc_sample();
+	//APP_ERROR_CHECK(err_code);
+}
+void mUser_heart_timeout_handler(void * p_context)
+{
+	UNUSED_PARAMETER(p_context);
+	ret_code_t err_code;
+	uint16_t heart_rate;
+	static uint32_t cnt = 0;
+
+	heart_rate = (uint16_t)sensorsim_measure(&m_heart_rate_sim_state, &m_heart_rate_sim_cfg);
+	cnt++;
+	err_code = ble_hrs_heart_rate_measurement_send(&m_hrs_id, heart_rate);
+	if((err_code != NRF_SUCCESS)&&
+			(err_code != NRF_ERROR_INVALID_STATE)&&
+			(err_code != NRF_ERROR_RESOURCES)&&
+			(err_code != NRF_ERROR_BUSY)&&
+			(err_code != BLE_ERROR_GATTS_SYS_ATTR_MISSING))
+		{
+			APP_ERROR_HANDLER(err_code);
+		}
+	m_rr_interval_enabled = ((cnt%3) != 0);
+}
+void mUser_rr_timeout_handler(void * p_context)
+{
+	UNUSED_PARAMETER(p_context);
+	if(m_rr_interval_enabled)
+	{
+		uint16_t rr_interval;
+
+		rr_interval = (uint16_t)sensorsim_measure(&m_rr_interval_sim_state, &m_rr_interval_sim_cfg);
+		ble_hrs_rr_interval_add(&m_hrs_id, rr_interval);
+
+		rr_interval = (uint16_t)sensorsim_measure(&m_rr_interval_sim_state, &m_rr_interval_sim_cfg);
+		ble_hrs_rr_interval_add(&m_hrs_id, rr_interval);
+
+		rr_interval = (uint16_t)sensorsim_measure(&m_rr_interval_sim_state, &m_rr_interval_sim_cfg);
+		ble_hrs_rr_interval_add(&m_hrs_id, rr_interval);
+
+		rr_interval = (uint16_t)sensorsim_measure(&m_rr_interval_sim_state, &m_rr_interval_sim_cfg);
+		ble_hrs_rr_interval_add(&m_hrs_id, rr_interval);
+
+		rr_interval = (uint16_t)sensorsim_measure(&m_rr_interval_sim_state, &m_rr_interval_sim_cfg);
+		ble_hrs_rr_interval_add(&m_hrs_id, rr_interval);
+
+		rr_interval = (uint16_t)sensorsim_measure(&m_rr_interval_sim_state, &m_rr_interval_sim_cfg);
+		ble_hrs_rr_interval_add(&m_hrs_id, rr_interval);
+	}
+
+}
+void mUser_sensor_timeout_handler(void * p_context)
+{
+	UNUSED_PARAMETER(p_context);
+	static bool sensor_contact_detected = false;
+
+	sensor_contact_detected = !sensor_contact_detected;
+	ble_hrs_sensor_contact_detected_update(&m_hrs_id, sensor_contact_detected);
+
+}
+//4.启动定时器
+static void application_timers_start(void)
+{
+    /* YOUR_JOB: Start your timers. below is an example of how to start a timer.
+       ret_code_t err_code;
+       err_code = app_timer_start(m_app_timer_id, TIMER_INTERVAL, NULL);
+       APP_ERROR_CHECK(err_code); */
+	
+	ret_code_t err_code;
+	err_code = app_timer_start(mUser_battery_timer_id, HEART_RATE_MEAS_INTERVAL, NULL);
+	APP_ERROR_CHECK(err_code);
+	err_code = app_timer_start(mUser_heart_timer_id, HEART_RATE_MEAS_INTERVAL, NULL);
+	APP_ERROR_CHECK(err_code);
+	err_code = app_timer_start(mUser_rr_timer_id,RR_INTERVAL_MEAS_INTERVAL, NULL);
+	APP_ERROR_CHECK(err_code);
+	err_code = app_timer_start(mUser_sensor_timer_id, SENSOR_CONTACT_DETECTED_INTERVAL, NULL);
+	APP_ERROR_CHECK(err_code);
+
+}
+//5.初始化传感器数据
+static void buttons_leds_init(bool * p_erase_bonds)
+{
+...
+	m_battery_sim_cfg.min = MIN_BATTERY_LEVEL;
+	m_battery_sim_cfg.max = MAX_BATTERY_LEVEL;
+	m_battery_sim_cfg.incr = BATTERY_LEVEL_INCREMENT;
+	m_battery_sim_cfg.start_at_max = true;
+	sensorsim_init(&m_battery_sim_state, &m_battery_sim_cfg);
+	m_heart_rate_sim_cfg.min = MIN_HEART_RATE;
+	m_heart_rate_sim_cfg.max = MAX_HEART_RATE;
+	m_heart_rate_sim_cfg.incr = HEART_RATE_INCREMENT;
+	m_heart_rate_sim_cfg.start_at_max = false;
+	sensorsim_init(&m_heart_rate_sim_state, &m_heart_rate_sim_cfg);
+	m_rr_interval_sim_cfg.min = MIN_RR_INTERVAL;
+	m_rr_interval_sim_cfg.max = MAX_RR_INTERVAL;
+	m_rr_interval_sim_cfg.incr = RR_INTERVAL_INCREMENT;
+	m_rr_interval_sim_cfg.start_at_max = false;
+	sensorsim_init(&m_rr_interval_sim_state, &m_rr_interval_sim_cfg);
+...
+}
+```
+
+## 5.17BLE串口透传
+
+将串口透传需要的文件添加到工程中并修改sdk_config.h配置
+
+需要添加的文件有ble_link_ctx_manager.c, app_fifo.c, app_uart_fifo.c, ble_nus.c，并在keil中添加对应的头文件路径。
+
+sdk_config.h修改如下：
+
+```c
+// <e> BLE_NUS_ENABLED - ble_nus - Nordic UART Service
+//==========================================================
+#ifndef BLE_NUS_ENABLED
+#define BLE_NUS_ENABLED 1
+#endif
+// <e> BLE_NUS_CONFIG_LOG_ENABLED - Enables logging in the module.
+//==========================================================
+#ifndef BLE_NUS_CONFIG_LOG_ENABLED
+#define BLE_NUS_CONFIG_LOG_ENABLED 1
+#endif
+
+//==========================================================
+
+// <h> nRF_Libraries 
+
+//==========================================================
+// <q> APP_FIFO_ENABLED  - app_fifo - Software FIFO implementation
+ 
+
+#ifndef APP_FIFO_ENABLED
+#define APP_FIFO_ENABLED 1
+#endif
+
+
+// <e> APP_UART_ENABLED - app_uart - UART driver
+//==========================================================
+#ifndef APP_UART_ENABLED
+#define APP_UART_ENABLED 1
+#endif
+// <o> APP_UART_DRIVER_INSTANCE  - UART instance used
+ 
+// <0=> 0 
+
+#ifndef APP_UART_DRIVER_INSTANCE
+#define APP_UART_DRIVER_INSTANCE 0
+#endif
+
+// </e>
+
+// <q> APP_USBD_AUDIO_ENABLED  - app_usbd_audio - USB AUDIO class
+ 
+ 
+ // <o> NRF_SDH_BLE_GATT_MAX_MTU_SIZE - Static maximum MTU size. 
+#ifndef NRF_SDH_BLE_GATT_MAX_MTU_SIZE
+#define NRF_SDH_BLE_GATT_MAX_MTU_SIZE 247//23
+#endif
+
+#ifndef NRF_SDH_BLE_GAP_DATA_LENGTH
+#define NRF_SDH_BLE_GAP_DATA_LENGTH 251
+#endif
+
+#ifndef NRF_SDH_BLE_GATT_MAX_MTU_SIZE
+#define NRF_SDH_BLE_GATT_MAX_MTU_SIZE 247
+#endif
+```
+
+main.c修改如下：
+
+```c
+增加串口透传实例m_nus_id.
+BLE_NUS_DEF(m_nus_id, NRF_SDH_BLE_TOTAL_LINK_COUNT);
+定义数据包长度
+static uint16_t   m_ble_nus_max_data_len = BLE_GATT_ATT_MTU_DEFAULT - 3;
+//串口发送
+static void app_uart_event_handler(app_uart_evt_t * p_app_uart_event)
+{
+	static uint8_t data_array[BLE_NUS_MAX_DATA_LEN];
+	static uint8_t index = 0;
+	uint32_t err_code;
+	
+	switch (p_app_uart_event->evt_type)
+		{
+		case APP_UART_DATA_READY:
+			UNUSED_VARIABLE(app_uart_get(&data_array[index]));
+			index++;
+			if((data_array[index-1]=='\n')||(data_array[index-1]=='\r'||(index >= m_ble_nus_max_data_len)))
+			{
+				if(index > 1)
+				{
+					NRF_LOG_DEBUG("Ready to send data over ble nus");
+					NRF_LOG_HEXDUMP_DEBUG(&data_array[0], index);
+					do
+					{
+						uint16_t length = (uint16_t)index;
+						err_code = ble_nus_data_send(&m_nus_id, data_array, &length, m_conn_handle);
+						if((err_code != NRF_ERROR_INVALID_STATE) && (err_code != NRF_ERROR_RESOURCES) && (err_code != NRF_ERROR_NOT_FOUND))
+						{
+							APP_ERROR_CHECK(err_code);
+						}
+					}
+					while (err_code == NRF_ERROR_RESOURCES);
+					
+				}
+				index = 0;
+			}
+			break;
+		case APP_UART_COMMUNICATION_ERROR:
+			APP_ERROR_HANDLER(p_app_uart_event->data.error_communication);
+			break;
+		case APP_UART_FIFO_ERROR:
+			APP_ERROR_HANDLER(p_app_uart_event->data.error_code);
+			break;
+		default:
+			break;
+		}
+}
+//从机串口接收处理函数
+static void ble_nus_data_handler(ble_nus_evt_t * p_evt)
+{
+	uint32_t err_code;
+	uint32_t i;
+	
+	if(p_evt->type == BLE_NUS_EVT_RX_DATA)
+	{
+		NRF_LOG_DEBUG("received data from ble nus. writing data on uart.");
+		NRF_LOG_HEXDUMP_DEBUG(p_evt->params.rx_data.p_data, p_evt->params.rx_data.length);
+		for(i = 0; i < p_evt->params.rx_data.length; i++)
+		{
+			do
+			{
+				err_code = app_uart_put(p_evt->params.rx_data.p_data[i]);
+				if((err_code != NRF_SUCCESS)&&(err_code != NRF_ERROR_BUSY))
+				{
+					NRF_LOG_ERROR("failed receiving nus message. error 0x%x.",err_code);
+					APP_ERROR_CHECK(err_code);
+				}
+			}
+			while (err_code == NRF_ERROR_BUSY);		
+		}
+		if(p_evt->params.rx_data.p_data[p_evt->params.rx_data.length-1] == '\r')
+		{
+			while(app_uart_put('\n') == NRF_ERROR_BUSY){}
+		}
+	}
+}
+//串口函数初始化
+static void user_uart_init(void)
+{
+	uint32_t err_code;
+	const app_uart_comm_params_t comm_params = 
+	{
+		.rx_pin_no = 8,
+	    .tx_pin_no = 6,  
+	    .rts_pin_no = 7, 
+	    .cts_pin_no = 5,   
+	    .flow_control = APP_UART_FLOW_CONTROL_DISABLED, 
+	    .use_parity = false,
+	    .baud_rate = NRF_UART_BAUDRATE_115200
+	};
+	
+	APP_UART_FIFO_INIT(&comm_params, 256, 256, app_uart_event_handler, APP_IRQ_PRIORITY_LOWEST, err_code);
+	APP_ERROR_CHECK(err_code);
+}
+//设置gatt的MTU值
+static void gatt_evt_handler(nrf_ble_gatt_t *p_gatt, nrf_ble_gatt_evt_t const *p_evt)
+{
+	if((m_conn_handle == p_evt->conn_handle) && (p_evt->evt_id == NRF_BLE_GATT_EVT_ATT_MTU_UPDATED))
+	{
+		m_ble_nus_max_data_len = p_evt->params.att_mtu_effective - OPCODE_LENGTH - HANDLE_LENGTH;
+		NRF_LOG_INFO("Data len is set to 0x%x(%d)",m_ble_nus_max_data_len,m_ble_nus_max_data_len);
+	}
+	NRF_LOG_DEBUG("ATT MTU exchanged completed. center 0x%x peripheral 0x%x",p_gatt->att_mtu_desired_central, p_gatt->att_mtu_desired_periph);
+}
+
+/**@brief Function for initializing the GATT module.
+ */
+static void gatt_init(void)
+{
+    ret_code_t err_code = nrf_ble_gatt_init(&m_gatt, gatt_evt_handler);
+    APP_ERROR_CHECK(err_code);
+}
+//添加服务
+static void services_init(void)
+{
+    ret_code_t         err_code;
+    nrf_ble_qwr_init_t qwr_init = {0};
+
+	ble_nus_init_t nus_init;
+	uint8_t body_sensor_location;
+	
+    // Initialize Queued Write Module.
+    qwr_init.error_handler = nrf_qwr_error_handler;
+
+    err_code = nrf_ble_qwr_init(&m_qwr, &qwr_init);
+    APP_ERROR_CHECK(err_code);
+    
+	nus_init.data_handler = ble_nus_data_handler;
+	ble_nus_init(&m_nus_id, &nus_init);
+}
+```
+
+如果characteristic_add返回NRF_ERROR_NO_MEM错误，要增加NRF_SDH_BLE_GATTS_ATTR_TAB_SIZE大小才行。
+
+## 5.18fstorage用法
+
+1.在keil5添加宏SOFTDEVICE_PRESENT
+
+2.天假头文件
+
+```c
+#include "nrf_fstorage.h"
+#include "nrf_fstorage_sd.h"
+```
+
+3.添加fstorage实例
+
+```c
+static void user_fds_event_handle(nrf_fstorage_evt_t *p_evt);
+NRF_FSTORAGE_DEF(nrf_fstorage_t fstorage) =
+{
+    /* Set a handler for fstorage events. */
+    .evt_handler = user_fds_event_handle,
+
+    /* These below are the boundaries of the flash space assigned to this instance of fstorage.
+     * You must set these manually, even at runtime, before nrf_fstorage_init() is called.
+     * The function nrf5_flash_end_addr_get() can be used to retrieve the last address on the
+     * last page of flash available to write data. */
+    .start_addr = 0x3e000,
+    .end_addr   = 0x3ffff,
+};
+```
+
+4.定义测试数据
+
+```c
+static uint32_t m_data          = 0xBADC0FFE;
+static char     m_hello_world[] = "hello world";
+```
+
+5.定义fstorage回调函数
+
+```c
+static void user_fds_event_handle(nrf_fstorage_evt_t *p_evt)
+{
+	if (p_evt->result != NRF_SUCCESS)
+    {
+        NRF_LOG_INFO("--> Event received: ERROR while executing an fstorage operation.");
+        return;
+    }
+
+    switch (p_evt->id)
+    {
+        case NRF_FSTORAGE_EVT_WRITE_RESULT:
+        {
+            NRF_LOG_INFO("--> Event received: wrote %d bytes at address 0x%x.",
+                         p_evt->len, p_evt->addr);
+        } break;
+
+        case NRF_FSTORAGE_EVT_ERASE_RESULT:
+        {
+            NRF_LOG_INFO("--> Event received: erased %d page from address 0x%x.",
+                         p_evt->len, p_evt->addr);
+        } break;
+
+        default:
+            break;
+    }
+}
+```
+
+6.定义一些功能函数
+
+```c
+static uint32_t nrf5_flash_end_addr_get()
+{
+    //该函数用于检测是否是最后一页
+    uint32_t const bootloader_addr = BOOTLOADER_ADDRESS;
+    uint32_t const page_sz         = NRF_FICR->CODEPAGESIZE;
+    uint32_t const code_sz         = NRF_FICR->CODESIZE;
+
+    return (bootloader_addr != 0xFFFFFFFF ?
+            bootloader_addr : (code_sz * page_sz));
+}
+
+static void power_manage(void)
+{
+#ifdef SOFTDEVICE_PRESENT
+    (void) sd_app_evt_wait();
+#else
+    __WFE();
+#endif
+}
+//用于等待写入完成操作
+void wait_for_flash_ready(nrf_fstorage_t const * p_fstorage)
+{
+  /* While fstorage is busy, sleep and wait for an event. */
+  while (nrf_fstorage_is_busy(p_fstorage))
+  {
+    power_manage();
+  }
+}
+static void print_flash_info(nrf_fstorage_t *p_fstorage)
+{
+    //打印一些信息
+	NRF_LOG_INFO("=============| flash info |=============");
+	NRF_LOG_INFO("erase unit: \t%d bytes", p_fstorage->p_flash_info->erase_unit);
+	NRF_LOG_INFO("program unit: \t%d bytes", p_fstorage->p_flash_info->program_unit);
+	NRF_LOG_INFO("========================================");
+}
+```
+
+7.定义测试功能函数
+
+```c
+static void user_fds_test(void)
+{
+	nrf_fstorage_api_t * p_fs_api;
+	ret_code_t err_code;
+#ifdef SOFTDEVICE_PRESENT
+	p_fs_api = &nrf_fstorage_sd;
+#else
+	p_fs_api = &nrf_fstorage_nvmc;
+#endif
+
+	err_code = nrf_fstorage_init(&fstorage, p_fs_api, NULL);
+	APP_ERROR_CHECK(err_code);
+	print_flash_info(&fstorage);
+	(void)nrf5_flash_end_addr_get();
+	NRF_LOG_INFO("Writing \"%x\" to flash", m_data);
+	err_code = nrf_fstorage_write(&fstorage, 0x3e000, &m_data, sizeof(uint32_t), NULL);
+	APP_ERROR_CHECK(err_code);
+	wait_for_flash_ready(&fstorage);
+	NRF_LOG_INFO("Done.");
+
+	m_data = 0xDEFABC12;
+	err_code = nrf_fstorage_write(&fstorage, 0x3e100, &m_data, sizeof(uint32_t), NULL);
+	APP_ERROR_CHECK(err_code);
+	wait_for_flash_ready(&fstorage);
+	NRF_LOG_INFO("Done.");
+
+	err_code = nrf_fstorage_write(&fstorage, 0x3f000, m_hello_world, sizeof(m_hello_world), NULL);
+	APP_ERROR_CHECK(err_code);
+	wait_for_flash_ready(&fstorage);
+	NRF_LOG_INFO("Done.");
+
+	NRF_LOG_INFO("read test");
+
+	err_code = nrf_fstorage_read(&fstorage, 0x3e000, &m_data, sizeof(uint32_t));
+	APP_ERROR_CHECK(err_code);
+	NRF_LOG_INFO("read:%x",m_data);
+	err_code = nrf_fstorage_read(&fstorage, 0x3e100, &m_data, sizeof(uint32_t));
+	APP_ERROR_CHECK(err_code);
+	NRF_LOG_INFO("read:%x",m_data);
+	m_hello_world[0] = 'a';
+	m_hello_world[1] = 'b';
+	err_code = nrf_fstorage_read(&fstorage, 0x3f000, m_hello_world, sizeof(m_hello_world));
+	APP_ERROR_CHECK(err_code);
+	NRF_LOG_INFO("read:%s",m_hello_world);
+	
+}
+```
+
+8.在main.c中调用user_fds_test()即可。
+
+## 5.19蓝牙MAC地址类型
+
+蓝牙地址类型主要包含2类，一是public device address，而是random device address。地址共有48bits。random device address又分为static random device address和private device address。private device address又分为Non-resolvable private address和resolvable private address。
+
+**public device address**：公共设备地址是需要购买的，要想IEEE申请，IEEE保证地址的唯一性。地址前高24bits是company id公司表示，低24bits由公司内部自己赋值。
+
+**static random device address**：是设备上电后随机生成的。最高2个bit是11，剩下的46bit不能全是0或者全是1。未重新上电之前地址保持不变，在重新上电之后地址可以选择重新生成也可以选择保持不变。
+
+**Non-resolvable private address**: 该地址和static random device address类似，区别只是该地址会定时更新，最高2个bits是00，更新周期由GAP规定，建议值是15分钟。
+
+**Resolvable private address**: 该地址会根据安全等级进行加密，在进行连接时可以根据加密信息进行秘钥交换，确保安全连接。最高2个bits是10，高24bits是随机数部分，低24bits是随机数和（identity resolving key）IRK经过hash运算得到的hash值。
+
+运算公式hash=ah(IRK, prand)，当对端BLE设备扫描到该类型地址后，会使用本地IRK和该prand进行同样的hash运算，将结果和地址中的hash字段比较，相同的时候才进行后续操作，这个过程叫做resolve（解析），如果不同会继续用下一个IRK重复resolve过程直到找到一个关联的IRK或者一个都没找到。该地址不能单独使用，需要同时具备public device address或者static device address中的一种。
+
+从广播包中分析地址类型：
+
+![image-20230406113851357](E:\databases\note\image-20230406113851357.png)
+
+TxAdd代表发送方地址类型，0是public device address，1是random device address。
+
+RxAdd代表接收方地址类型，在定向广播时才会出现RxAdd。
+
+测试代码：
+
+```c
+void mac_set(void)
+{
+	ble_gap_addr_t addr;
+	uint32_t err_code;
+	
+	//get ble default address
+    err_code = sd_ble_gap_addr_get(&addr);
+	APP_ERROR_CHECK(err_code);
+	addr.addr_type = BLE_GAP_ADDR_TYPE_RANDOM_STATIC;
+	addr.addr[BLE_GAP_ADDR_LEN-1] = 0xC0;
+    err_code = sd_ble_gap_addr_set(&addr); 
+	APP_ERROR_CHECK(err_code);
+}
+int main(void)
+{
+    bool erase_bonds;
+
+    // Initialize.
+    //user_uart_init();
+    log_init();
+    timers_init();
+    buttons_leds_init(&erase_bonds);
+    power_management_init();
+    ble_stack_init();
+    gap_params_init();
+    gatt_init();
+	services_init();
+    advertising_init();
+	mac_set();
+    conn_params_init();
+    peer_manager_init();
+
+    // Start execution.
+    NRF_LOG_INFO("Template example started.");
+    application_timers_start();
+
+    advertising_start(erase_bonds);
+	//user_fds_test();
+    // Enter main loop.
+    for (;;)
+    {
+        idle_state_handle();
+    }
+}
+
+```
+
+![image-20230406121223170](E:\databases\note\image-20230406121223170.png)
+
+## 5.20IBeacon应用
+
+Beacon帧格式为
+
+![image-20230407110807940](E:\databases\note\image-20230407110807940.png)
+
+AD Field Length表示advertisement Data的长度，表示有用的广播信息长度。
+
+Type表示advertisement type, 表示广播类型。这里使用厂家自定义ble_advdata_manuf_data_t数据，所以这里的Type是0xFF。
+
+company ID表示公司标识，nordic公司是0x0059
+
+IBeacon Type这里是固定值0x02，表示这是beacon设备
+
+IBeacon Length表示剩下字段长度
+
+UUID IBeacon这里写入ibeacon的UUID
+
+Major表示分组号
+
+Minor表示组内单元编号
+
+TX Power表示1米处RSSI信号强度值
+
+```c
+#define APP_BEACON_INFO_LENGTH	0x17
+#define APP_ADV_DATA_LENGTH		0x15
+#define APP_DEVICE_TYPE			0x02
+#define APP_MEASURED_RSSI		0xC3
+#define APP_COMPANY_INDENTIFIER 0x0059
+#define APP_MAJOR_VALUE			0x01,0x02
+#define APP_MINOR_VALUE			0x03,0x04
+#define APP_BEACON_UUID			0x01, 0x12, 0x23, 0x34, \
+                                0x45, 0x56, 0x67, 0x78, \
+                                0x89, 0x9a, 0xab, 0xbc, \
+                                0xcd, 0xde, 0xef, 0xf0
+                                
+static uint8_t m_beacon_info[APP_BEACON_INFO_LENGTH] = 
+{
+	APP_DEVICE_TYPE,	//固定值0x02，代表这是一个beacon设备
+	APP_ADV_DATA_LENGTH,//广播数据长度
+	APP_BEACON_UUID,//beacon uuid
+	APP_MAJOR_VALUE,//major
+	APP_MINOR_VALUE,//minor
+	APP_MEASURED_RSSI//1米处RSSI强度
+};
+```
+
+设置广播包：
+
+```c
+static void advertising_init(void)
+{
+    ret_code_t             err_code;
+    ble_advertising_init_t init;
+	ble_advdata_manuf_data_t manuf_data;
+    memset(&init, 0, sizeof(init));
+
+	manuf_data.company_identifier = APP_COMPANY_INDENTIFIER;//设置公司标识
+	manuf_data.data.p_data = m_beacon_info;//设置广播数据
+	manuf_data.data.size = APP_BEACON_INFO_LENGTH;//设置广播数据长度
+    init.advdata.name_type               = BLE_ADVDATA_NO_NAME;//设置广播包内不包含设备名以节省广播包空间
+    init.advdata.include_appearance      = false;
+    init.advdata.flags                   = BLE_GAP_ADV_FLAG_BR_EDR_NOT_SUPPORTED;//设置该广播包不支持BR/EDR
+	...
+    init.config.ble_adv_fast_enabled  = true;
+    init.config.ble_adv_fast_interval = 100;//APP_ADV_INTERVAL;
+    init.config.ble_adv_fast_timeout  = 0;//APP_ADV_DURATION;//设置一直广播
+    ...
+	init.advdata.p_manuf_specific_data = &manuf_data;
+    err_code = ble_advertising_init(&m_advertising, &init);
+    ...
+}
+```
+
+编译烧录后抓取广播包如下：
+
+![image-20230407114318187](E:\databases\note\image-20230407114318187.png)
+
+广播包只有31字节，beacon信息已经差不多占满整个广播包了。如果希望在广播中继续添加数据，只能将数据放到广播回包中。下面将UUID放入广播回包如下。
+
+```c
+static void advertising_init(void)
+{
+    ret_code_t             err_code;
+    ble_advertising_init_t init;
+    ble_uuid_t adv_uuids[] = {{LED_KEY_UUID_SERVICE, mUser_led_key_id.uuid_type}};
+    ...
+    memset(&init, 0, sizeof(init));
+...
+    init.srdata.uuids_complete.uuid_cnt = sizeof(adv_uuids) / sizeof(adv_uuids[0]);
+    init.srdata.uuids_complete.p_uuids  = adv_uuids;
+...
+    err_code = ble_advertising_init(&m_advertising, &init);
+...
+}
+uint32_t ble_advertising_init(ble_advertising_t            * const p_advertising,
+                              ble_advertising_init_t const * const p_init)
+{
+    ...
+    p_advertising->adv_params.properties.type = BLE_GAP_ADV_TYPE_NONCONNECTABLE_SCANNABLE_UNDIRECTED;//将广播类型改为有回包类型
+     ret = sd_ble_gap_adv_set_configure(&p_advertising->adv_handle, NULL, &p_advertising->adv_params);
+    ...
+}
+```
+
+## 5.21蓝牙协议栈下硬件定时器使用
+
+RTC0, TIMER0被协议栈占用，RTC1被软件定时器使用。因此在使用协议栈时需要避开这3个外设。
+
+1.使能定时器模块
+
+![image-20230407120818906](E:\databases\note\image-20230407120818906.png)
+
+2.添加nrfx_timer.c到工程中，定义一个定时器实例
+
+![image-20230407130718770](E:\databases\note\image-20230407130718770.png)
+
+```c
+nrfx_timer_t m_timer1_id = NRFX_TIMER_INSTANCE(1);
+```
+
+定义定时器回调函数和初始化函数
+
+```c
+static void timer1_event_handler(nrf_timer_event_t event_type, void         *p_context)
+{
+	uint32_t ticks;
+	switch(event_type)
+	{
+		case NRF_TIMER_EVENT_COMPARE0:
+			nrf_gpio_pin_toggle(BSP_LED_1);
+			NRF_LOG_INFO("timer1 handler");
+			break;
+	}
+}
+static void user_timer1_init(void)
+{
+	nrfx_err_t err_code;
+	uint32_t ticks_ms;
+	nrfx_timer_config_t config = NRFX_TIMER_DEFAULT_CONFIG;
+	
+	err_code = nrfx_timer_init(&m_timer1_id, &config, timer1_event_handler);
+	APP_ERROR_CHECK(err_code);
+	ticks_ms = nrfx_timer_ms_to_ticks(&m_timer1_id, 1000);//定时1000ms
+	nrfx_timer_extended_compare(&m_timer1_id, NRF_TIMER_CC_CHANNEL0, ticks_ms, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);//NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK:周期性定时，NRF_TIMER_SHORT_COMPARE0_STOP_MASK:单次定时
+	nrfx_timer_enable(&m_timer1_id);
+}
+```
+
+## 5.22蓝牙防丢器应用实例
+
+1.使能相应模块
+
+![image-20230407230932926](E:\databases\note\image-20230407230932926.png)
+
+![image-20230407231142338](E:\databases\note\image-20230407231142338.png)
+
+2.在sdk_config.h添加模块
+
+```c
+// <e> BLE_DB_DISCOVERY_ENABLED - ble db discovery - Ble Db Discovery
+//==========================================================
+#ifndef BLE_DB_DISCOVERY_ENABLED
+#define BLE_DB_DISCOVERY_ENABLED 1
+#endif
+// </e>
+// <e> NRF_BLE_GQ_ENABLED - nrf_ble_gq - BLE GATT Queue Module
+//==========================================================
+#ifndef NRF_BLE_GQ_ENABLED
+#define NRF_BLE_GQ_ENABLED 1
+#endif
+// <o> NRF_BLE_GQ_DATAPOOL_ELEMENT_SIZE - Default size of a single element in the pool of memory objects.
+#ifndef NRF_BLE_GQ_DATAPOOL_ELEMENT_SIZE
+#define NRF_BLE_GQ_DATAPOOL_ELEMENT_SIZE 20
+#endif
+
+// <o> NRF_BLE_GQ_DATAPOOL_ELEMENT_COUNT - Default number of elements in the pool of memory objects.
+#ifndef NRF_BLE_GQ_DATAPOOL_ELEMENT_COUNT
+#define NRF_BLE_GQ_DATAPOOL_ELEMENT_COUNT 8
+#endif
+
+// <o> NRF_BLE_GQ_GATTC_WRITE_MAX_DATA_LEN - Maximal size of the data inside GATTC write request (in bytes).
+#ifndef NRF_BLE_GQ_GATTC_WRITE_MAX_DATA_LEN
+#define NRF_BLE_GQ_GATTC_WRITE_MAX_DATA_LEN 2
+#endif
+
+// <o> NRF_BLE_GQ_GATTS_HVX_MAX_DATA_LEN - Maximal size of the data inside GATTC notification or indication request (in bytes).
+#ifndef NRF_BLE_GQ_GATTS_HVX_MAX_DATA_LEN
+#define NRF_BLE_GQ_GATTS_HVX_MAX_DATA_LEN 16
+#endif
+
+// </e>
+```
+
+3.添加头文件编译路径
+
+![image-20230407231343540](E:\databases\note\image-20230407231343540.png)
+
+4.添加.c文件
+
+![image-20230407231447391](E:\databases\note\image-20230407231447391.png)
+
+5.声明服务实例
+
+```c
+#include "ble_bas.h"
+#include "ble_ias.h"
+#include "ble_ias_c.h"
+#include "ble_lls.h"
+#include "ble_tps.h"
+
+BLE_BAS_DEF(m_bas_id);
+BLE_IAS_DEF(m_ias_id, 1);
+BLE_IAS_C_DEF(m_ias_c_id);
+BLE_LLS_DEF(m_lls_id);
+BLE_TPS_DEF(m_tps_id);
+```
+
+6.添加服务
+
+```c
+#define TX_POWER_LEVEL		-4
+static void services_init(void)
+{
+    ret_code_t         err_code;
+    nrf_ble_qwr_init_t qwr_init = {0};
+	ble_bas_init_t bas_init;
+	ble_ias_init_t ias_init;
+	ble_lls_init_t lls_init;
+	ble_tps_init_t tps_init;
+
+    // Initialize Queued Write Module.
+    ...
+	memset(&bas_init, 0, sizeof(ble_bas_init_t));
+	bas_init.evt_handler = ble_bas_evt_handler;
+	bas_init.support_notification = true;
+	bas_init.p_report_ref = NULL;
+	bas_init.initial_batt_level = 100;
+	bas_init.bl_cccd_wr_sec = SEC_OPEN;
+	bas_init.bl_rd_sec = SEC_OPEN;
+	bas_init.bl_report_rd_sec = SEC_OPEN;
+	ble_bas_init(&m_bas_id, &bas_init);
+
+	memset(&ias_init, 0, sizeof(ble_ias_init_t));
+	ias_init.alert_wr_sec = SEC_OPEN;
+	ias_init.evt_handler = ble_ias_evt_handler;
+	ble_ias_init(&m_ias_id, &ias_init);
+	
+	memset(&lls_init, 0, sizeof(ble_lls_init_t));
+	lls_init.alert_level_rd_sec = SEC_OPEN;
+	lls_init.alert_level_wr_sec = SEC_OPEN;
+	lls_init.initial_alert_level = BLE_CHAR_ALERT_LEVEL_NO_ALERT;
+	lls_init.evt_handler = ble_lls_evt_handler;
+	lls_init.error_handler = ble_srv_error_handler;
+	ble_lls_init(&m_lls_id, &lls_init);
+	
+	memset(&tps_init, 0, sizeof(ble_tps_init_t));
+	tps_init.initial_tx_power_level = TX_POWER_LEVEL;
+	tps_init.tpl_rd_sec = SEC_OPEN;
+	ble_tps_init(&m_tps_id, &tps_init);
+}
+
+static void alert_signal(uint8_t alert_level)
+{
+	app_timer_stop(mUser_led_timer_id);
+	switch ( alert_level )
+	{
+	    case  BLE_CHAR_ALERT_LEVEL_NO_ALERT:
+	        nrf_gpio_pin_set(BSP_LED_1);
+	        break;
+	    case  BLE_CHAR_ALERT_LEVEL_MILD_ALERT:
+			app_timer_start(mUser_led_timer_id, LED_INTERVAL_LOW, NULL);
+	        break;
+	    case  BLE_CHAR_ALERT_LEVEL_HIGH_ALERT:
+			app_timer_start(mUser_led_timer_id, LED_INTERVAL_FAST, NULL);
+	        break;
+	    default:
+	    	//lose
+			nrf_gpio_pin_clear(BSP_LED_1);
+	        break;
+	}
+}
+void ble_bas_evt_handler(ble_bas_t * p_bas, ble_bas_evt_t * p_evt)
+{
+	ret_code_t err_code;
+	UNUSED_PARAMETER(p_bas);
+	
+	switch (p_evt->evt_type)
+	{
+		case BLE_BAS_EVT_NOTIFICATION_ENABLED:
+			err_code = app_timer_start(mUser_battery_timer_id, BATTERY_LEVEL_MEAS_INTERVAL, NULL);
+			APP_ERROR_CHECK(err_code);
+			break;
+		case BLE_BAS_EVT_NOTIFICATION_DISABLED:
+			err_code = app_timer_stop(mUser_battery_timer_id);
+			APP_ERROR_CHECK(err_code);
+			break;
+		default:
+			break;
+	}
+	
+}
+void ble_ias_evt_handler(ble_ias_t * p_ias, ble_ias_evt_t * p_evt)
+{
+	switch ( p_evt->evt_type )
+	{
+	    case BLE_IAS_EVT_ALERT_LEVEL_UPDATED:
+			alert_signal(p_evt->p_link_ctx->alert_level);
+	        break;
+	    default:
+	        break;
+	}
+}
+void ble_lls_evt_handler(ble_lls_t * p_lls, ble_lls_evt_t * p_evt)
+{
+	switch ( p_evt->evt_type )
+	{
+	    case  BLE_LLS_EVT_LINK_LOSS_ALERT:
+	        alert_signal(p_evt->params.alert_level);
+	        break;
+	    default:
+	        break;
+	}
+}
+void ble_srv_error_handler(uint32_t nrf_error)
+{
+	NRF_LOG_ERROR("nrf_error:%x",nrf_error);
+}
+
+
+uint32_t ble_advertising_init(ble_advertising_t            * const p_advertising,
+                              ble_advertising_init_t const * const p_init)
+{
+    uint32_t ret;
+   ...
+    ret = sd_ble_gap_adv_set_configure(&p_advertising->adv_handle, NULL, &p_advertising->adv_params);
+    VERIFY_SUCCESS(ret);
+    //注意sd_ble_gap_tx_power_set函数调用必须在ble_advertising_start之前，其它具体看官方文档
+	ret = sd_ble_gap_tx_power_set(BLE_GAP_TX_POWER_ROLE_ADV, p_advertising->adv_handle, -4);
+	VERIFY_SUCCESS(ret);
+    p_advertising->initialized = true;
+    return ret;
+}
+```
+
+## 5.23DFU介绍
+
+DFU(Device Firmware Update), 设备固件升级。OTA(Over the Air)是DFU的一种类型, OTA的全称应该是OTA DFU, OTA代表固件空中升级。DFU除了可以通过无线方式OTA进行升级，也可以通过有线方式升级，比如UART, USB, SPI等。
+
+DFU可以采用dual bank或者single bank模式，dual bank的做法是升级时系统先进入bootloader, 然后把新固件下载下来并校验成功，然后擦除老固件并升级新固件。dual bank方式虽然牺牲了很多存储空间，但是换来了更好的升级体验。
+
+single bank的做法是升级时系统先进入bootloader，然后立马擦除老固件，直接升级新固件。
+
+single bank相比dual bank可以节省很多flash空间，在系统资源比较紧张的时候推荐single bank。不管是single bank还是dual bank，在升级过程中出现问题后都可以进行二次升级。dual bank在升级过程中出现问题或者新固件有问题，还可以继续使用老固件，single bank则只能一直停留在bootloader中等待二次或多次升级，设备无法正常工作。
+
+**dual bank flash布局**
+
+![image-20230415114233175](E:\databases\note\image-20230415114233175.png)
+
+在flash中开辟一个Free区域，将新固件下载到Free区域中，如果下载完成校验OK，然后再替旧固件Application。
+
+**single bank flash布局**
+
+![image-20230415114611956](E:\databases\note\image-20230415114611956.png)
+
+程序烧录过程中直接擦除旧固件Application，将新固件烧录进来。
+
+bootloader和SoftDevice只能使用dual bank模式，因为使用single bank模式一旦烧录过程出现问题或者固件有问题，设备就无法启动了，只能使用flash工具重新烧写。Application可以使用dual bank或者single bank。
+
+**DFU dual bank升级流程**
+
+1.烧录bootloader程序后，设备会进入DFU模式。设备上电后会先运行bootloader，bootloader会检查bank0是否有应用程序，如果没有也会进入DFU模式否则会执行应用程序。
+
+2.bootloader进入DFU模式会擦除Bank1区域，新固件校验成功才会擦除Bank0区域。
+
+3.将接收到的数据写入Bank1
+
+4.接收完成并校验成功，擦除Bank0，将Bank1的数据拷贝到Bank0.
+
+5.拷贝完成后运行Bank0应用程序，Bank1中的数据不会被擦除，需要等下次进入bootloader DFU模式才擦除。
+
+6.如果设置了将旧应用程序的数据保留，新的应用程序会将其数据在原有数据存储空间上叠加存储，不会覆盖。
+
+**非按键式(Buttonless)DFU OTA升级**
+
+参考内容：https://devzone.nordicsemi.com/guides/short-range-guides/b/software-development-kit/posts/nrf5-sdk-v17-1-0-secure-dfu-hands-on-tutorial
+
+1.window下载nRF Connect for Desktop，安装好之后安装Programmer工具。
+
+2.安卓下载nRF Connect APP.
+
+3.安卓下载nRF Toolbox APP
+
+4.安装MinGW
+
+![image-20230416125125497](E:\databases\note\image-20230416125125497.png)
+
+点击installation>apply changes.
+
+安装完成双击C:\MinGW\msys\1.0\msys.bat，切换到工程目录nRF5_SDK_17.1.0_ddde560\external\micro-ecc\nrf52hf_keil\armgcc下执行make编译生成micro_ecc_lib_nrf52.lib。
+
+从github上下载[pc-nrfutil](https://github.com/NordicSemiconductor/pc-nrfutil), 用命令行进入pc-nrfutil文件夹执行命令python setup.py install.安装nrfutil。安装参考[教程](https://blog.csdn.net/kangweijian/article/details/129414340)如下:
+
+1.下载python3.7.3版本
+
+2.安装python之后运行命令更新pip版本
+
+```python
+python -m pip install --upgrade pip
+```
+
+3.运行命令将pip源更换为国内，否则直接运行python setup.py install安装nrfutil可能会出现安装时间太久甚至有些包无法找到下载安装。
+
+```python
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+```
+
+4.更换为国内源之后，运行命令安装nrfutil
+
+```python
+python setup.py install
+```
+
+安装完成运行命令nrfutil出现如下画面，正面安装成功，如果过程出现安装失败的情况需要多运行几次python setup.py install命令。
+
+![image-20230419013141753](E:\databases\note\image-20230419013141753.png)
+
+5.运行命令生成private key，生成的private.key必须要保存起来
+
+```python
+nrfutil.exe keys generate E:\databases\blueTooth\key\private.key
+```
+
+6.运行命令生成public key
+
+```python
+nrfutil keys display --key pk --format code E:\databases\blueTooth\key\private.key --out_file E:\databases\blueTooth\key\public_key.c
+```
+
+
+
+查看协议栈FWID参考这里https://devzone.nordicsemi.com/f/nordic-q-a/1171/how-do-i-access-softdevice-version-string。
+
+使用命令行打开nrfjprog，用命令擦除全部
+
+```python
+nrfjprog -e
+```
+
+使用命令烧录协议栈
+
+```python
+nrfjprog --program E:\keil5_projects\DeviceDownload\nRF5_SDK_17.1.0_ddde560\components\softdevice\s132\hex\s132_nrf52_7.2.0_softdevice.hex --verify
+```
+
+使用命令读取协议栈版本ID，读取回来低16bits就是协议栈版本ID，例如协议栈s132_nrf52_7.2.0_softdevice.hex，读取回来就是0x0000300C: FFFF0101,其中ID=0x101
+
+```python
+nrfjprog --family NRF52 --memrd 0x0000300C
+```
+
+接下来使用命令生成.zip压缩包
+
+```python
+nrfutil pkg generate --hw-version 52 --application-version 1 --application app.hex --sd-req 0x101 --key-file private.key test_Dfu17.zip
+```
+
+hw-version 52: 这是硬件版本，指的是NRF52系列，如果烧录的是NRF51系列，这里要改成51。
+
+application-version 1:这个是应用版本，由用户自定义。
+
+--sd-req 0x101: 这是协议栈版本ID。不同的协议栈需要烧录不同的ID
+
+其中boot.hex从nRF5_SDK_17.1.0_ddde560\examples\dfu\secure_bootloader\pca10040_s132_ble工程中编译生成。
+
+app.hex从nRF5_SDK_17.1.0_ddde560\examples\ble_peripheral\ble_app_buttonless_dfu\pca10040\s132工程中编译生成。
+
+生成test_Dfu17.zip之后。使用命令擦除重新烧录
+
+```python
+nrfjprog -e && nrfjprog --program s132_nrf52_7.2.0_softdevice.hex && nrfjprog --program boot.hex && nrfjprog --program app.hex && nrfjprog -r
+```
+
+烧录后用nRF Connect APP搜索DfuTarg设备并连接。此时设备处于bootloader模式。
+
+连接后点DFU，选择刚刚生成的zip文件升级
+
+![image-20230419210606564](E:\databases\note\image-20230419210606564.png)
+
+升级完成后会自动断开连接，再次搜索会出现Nordic_Buttonless，说明OTA升级成功。进入application模式。
+
+![image-20230419210805952](E:\databases\note\image-20230419210805952.png)
+
+如果要重新进入bootloader模式，只需要点击CONNECT重新连接设备，然后使能指示并发送命令。重新扫描发现设备名称又变回DfuTarg，说明成功回到bootloader模式。
+
+![image-20230419211654125](E:\databases\note\image-20230419211654125.png)
+
+**hex的烧录与合并setting文件生成与使用**
+
+setting文件的目的是在批量生成的时候，下载后就可以直接运行到application，而 不是和上面的那样先进入bootloader然后再OTA一次才能进入application。
+
+使用命令生成app_setting,hex.
+
+```python
+nrfutil settings generate --family NRF52 --application app.hex --application-version 1 --bootloader-version 1 --bl-settings-version 1 app_setting.hex
+#其中--application-version是application版本号，由用户自定义
+#--bootloader-version是bootloader版本号，由用户自定义
+#--bl-settings-version是setting版本号，由用户自定义
+```
+
+如果出现错误：
+
+```python
+ERROR: JLinkARM DLL reported an error. Try again. If error condition
+ERROR: persists, run the same command again with argument --log, contact Nordic
+ERROR: Semiconductor and provide the generated log.log file to them.
+```
+
+可能原因是板子接触不良，需要重新插拔几次烧录线。
+
+烧录需要按以下步骤进行：
+
+```python
+1.擦除flash
+nrfjprog -e
+2.烧录协议栈
+nrfjprog --program s132_nrf52_7.2.0_softdevice.hex
+3.烧录setting
+nrfjprog --program app_setting.hex
+4.烧录bootloader
+nrfjprog --program boot.hex
+5.烧录application
+nrfjprog --program app.hex
+```
+
+为了进一步简化生产步骤，我们可以把多个hex合并为一个hex，使用nrf5x command line tool工具里的mergehex指令。该指令一次最多可以合并3个hex，4个hex需要分两次合并。
+
+1.合并协议栈hex，boot hex，应用hex，使用命令
+
+```python
+mergehex --merge s132_nrf52_7.2.0_softdevice.hex boot.hex app.hex --output output3tol.hex
+
+mergehex --merge output3tol.hex app_setting.hex --output output4tol.hex
+```
+
+合并后直接使用命令烧录
+
+```python
+nrfjprog --program output4tol.hex
+nrfjprog -r
+```
+
+**DFU移植**
+
+1.使能DFU服务
+
+![image-20230420004859977](E:\databases\note\image-20230420004859977.png)
+
+2.添加绑定功能
+
+![image-20230420005224890](E:\databases\note\image-20230420005224890.png)
+
+3.添加FDS和CRC功能
+
+![image-20230420005409765](E:\databases\note\image-20230420005409765.png)
+
+4.更改协议栈初始化参数
+
+![image-20230420005708555](E:\databases\note\image-20230420005708555.png)
+
+5.添加.c文件
+
+![image-20230420010035983](E:\databases\note\image-20230420010035983.png)
+
+
+
+![image-20230420010455807](E:\databases\note\image-20230420010455807.png)
+
+
+
+![image-20230420010644131](E:\databases\note\image-20230420010644131.png)
+
+![image-20230420011005999](E:\databases\note\image-20230420011005999.png)
+
+如果出现错误，需要在keil添加宏
+
+```c
+..\..\..\..\..\..\components\ble\ble_services\ble_dfu\ble_dfu_bonded.c(63): error:  #20: identifier "nrf_dfu_set_peer_data_svci_async_t" is undefined
+```
+
+```c
+NRF_DFU_TRANSPORT_BLE=1 BL_SETTINGS_ACCESS_ONLY
+```
+
+
 
 
 
@@ -2401,3 +4237,407 @@ A4图形大小：297x210
 3.添加图层
 
 4.保存文件为.dwt格式
+
+
+
+# 7.USB学习笔记
+
+USB接口类型主要分为三类：TYPE A, TYPE B, TYPE C
+
+USB传输速度：低速1.5M/bps, 全速12M/bps, 高速480M/bps，低速上拉电阻加在D-线上，高速和全速上拉电阻加在D+线上。
+
+USB的Hub最多可带127个外设
+
+![img](https://www.usbzh.com/uploadimg/202202/232526132916.jpg)
+
+![img](https://www.usbzh.com/uploadimg/202202/232239921302.jpg)
+
+bInterfaceClass的典型代码为1，2，3，6，7，8，9，10，11，255。分别代表意思为
+1－audio：表示一个音频设备。
+2－communication device：通讯设备，如电话，moden等等。
+3－[HID](https://www.usbzh.com/article/detail-76.html)：人机交互设备，如键盘，鼠标等。
+6－image图象设备，如扫描仪，摄像头等，有时数码相 机也可归到这一类。
+7－打印机类。如单向，双向打印机等。
+8－mass storage海量存储类。所有带有一定存储功能的都可以归到这一类。如数码相机大多数都归这一类。
+9－hub类, [集线器](https://www.usbzh.com/article/detail-25.html)。
+11－chip card/smart card。
+255－vendor specific.厂家的自定义类，主要用于一些特殊的设备。如接口转接卡等。
+
+## 7.1USB设备的枚举过程
+
+1.USB设备插入USB接口后，主机检测D+/D-线上的电压，确认有设备连接，USB[集线器](https://www.usbzh.com/article/detail-25.html)通过中断[IN](https://www.usbzh.com/article/detail-450.html)通道，向主机报告有USB设备连接
+
+2.主机接到通知后，通过[集线器](https://www.usbzh.com/article/detail-25.html)设备类请求GetPortStatus获取更多的信息。然后主机等待100ms等待设备稳定，然后发送[集线器](https://www.usbzh.com/article/detail-25.html)设备类请求SetPortStatus,对USB设备进行复位，复位后USB设备的地址为0，这样主机就可以使用地址0与USB设备进行通信,复位后的设备可以从USB总线上获取小于100mA的电流，用于使用默认地址对管道0控制[事务](https://www.usbzh.com/article/detail-691.html)响应。
+
+3.主机向地址为0（即刚插入的USB设备）的设备端点0（默认端点）发送获取设备描述符的标准请求GetDescriptor。
+
+4.USB设备收到请求后，将其预设的设备描述符返回给主机。
+
+5.主机收到设备描述符后，返回一个0长度的数据确认包。
+
+6.主机对设备再次复位，复位后主机对地址为0的设备端点0发送一个设置地址SetAddress请求（新的设备地址在数据包中）。
+
+7.主机发送请求状态返回，设备返回0长度的状态数据包。
+
+8.主机收到状态数据包后，发送应答包ACK给设备，设备收到ACK后，启用新的设备地址。
+
+9.主机再次使新的地址获取设备描述符GetDescriptor，设备返回设备描述符。
+
+10.主机获取第一次配置描述符有前18个字节，设备返回配置描述符的前18个字节，其数据包中含有配置描述符的总长度。
+
+11.主机根据配置描述符的总长度再次获取配置描述符，设备返回全总的配置描述符。
+
+12.如果还有字符串描述符，系统还会获取字符串描述符。像HID设备还有报告描述符，它也需要单独获取。
+
+## 7.2USB设备的断开
+
+USB设备从USB总线断开时，包括以下几个步骤：
+
+1.USB设备从集线器下行端口断开时，集线器禁止该端口，并通过中断IN通道向USB主机报告其端口变化。
+
+2.主机收到端口变化后发送GetPortStatus获取详细信息，并做处理断开操作。
+
+3.系统调用USB驱动程序的断开回调函数，释放该设备占用的所有系统资源。
+
+参考资料：
+
+https://www.usbzh.com/article/detail-110.html
+
+windows系统中设备描述符的结构体定义如下：
+
+```c
+struct _DEVICE_DESCRIPTOR_STRUCT 
+{ 
+    BYTE bLength;           //设备描述符的字节数大小，为0x12 
+    BYTE bDescriptorType;   //描述符类型编号，为0x01 
+    WORD bcdUSB;            //USB版本号 
+    BYTE bDeviceClass;      //USB分配的设备类代码，0x01~0xfe为标准设备类，0xff为厂商自定义类型 
+                            //0x00不是在设备描述符中定义的，如HID 
+    BYTE bDeviceSubClass;   //usb分配的子类代码，同上，值由USB规定和分配的 
+    BYTE bDeviceProtocol;   //USB分配的设备协议代码，同上 
+    BYTE bMaxPacketSize0;   //端点0的最大包的大小 
+    WORD idVendor;          //厂商编号 
+    WORD idProduct;         //产品编号 
+    WORD bcdDevice;         //设备出厂编号 
+    BYTE iManufacturer;     //描述厂商字符串的索引 
+    BYTE iProduct;          //描述产品字符串的索引 
+    BYTE iSerialNumber;     //描述设备序列号字符串的索引 
+    BYTE bNumConfiguration; //可能的配置数量 
+}
+```
+
+设备描述符含义：
+
+- bLength : 描述符大小．固定为0x12．
+- bDescriptorType : 设备描述符类型．固定为0x01．
+- bcdUSB : USB 规范发布号．表示了本设备能适用于那种协议，如2.0=0200，1.1=0110等．
+- bDeviceClass : 类型代码（由USB指定）。当它的值是0时，表示所有接口在[配置描述符](https://www.usbzh.com/article/detail-67.html)里，并且所有接口是独立的。当它的值是1到FEH时，表示不同的接口关联的。当它的值是FFH时，它是厂商自己定义的．
+- bDeviceSubClass : 子类型代码（由USB分配）．如果bDeviceClass值是0，一定要设置为0．其它情况就跟据USB-IF组织定义的编码．
+- bDeviceProtocol : 协议代码（由USB分配）．如果使用USB-IF组织定义的协议，就需要设置这里的值，否则直接设置为0。如果厂商自己定义的可以设置为FFH．
+- bMaxPacketSize0 : 端点０最大分组大小（只有8,16,32,64有效）．
+- [idVendor](https://www.usbzh.com/article/detail-953.html) : 供应商ID（由USB分配）．
+- idProduct : 产品ID（由厂商分配）．由供应商ID和产品ID，就可以让操作系统加载不同的驱动程序．
+- bcdDevice : 设备出产编码．由厂家自行设置．
+- iManufacturer : 厂商描述符字符串索引．索引到对应的[字符串描述符](https://www.usbzh.com/article/detail-53.html)． 为０则表示没有．
+- iProduct : :产品描述符字符串索引．同上．
+- iSerialNumber : 设备序列号字符串索引．同上．
+- bNumConfigurations : 可能的配置数．定义设备以当前速度支持的配置数量
+
+配置描述符定义：
+
+```c
+struct _CONFIGURATION_DESCRIPTOR_STRUCT 
+{ 
+  BYTE bLength;           //配置描述符的字节数大小，固定为9字节
+  BYTE bDescriptorType;   //描述符类型编号，为0x02 
+  WORD wTotalLength;     //配置所返回的所有数量的大小 
+  BYTE bNumInterface;     //此配置所支持的接口数量 
+  BYTE bConfigurationVale;   //Set_Configuration命令需要的参数值 
+  BYTE iConfiguration;       //描述该配置的字符串的索引值 
+  BYTE bmAttribute;           //供电模式的选择 
+  BYTE MaxPower;             //设备从总线提取的最大电流 
+}CONFIGURATION_DESCRIPTOR_STRUCT
+```
+
+- bLength : 描述符大小．固定为0x09．
+
+- bDescriptorType : 配置描述符类型．固定为0x02．
+
+- wTotalLength : 返回整个数据的长度．指此配置返回的配置描述符，[接口描述符](https://www.usbzh.com/article/detail-64.html)以及[端点描述符](https://www.usbzh.com/article/detail-56.html)的全部大小．
+
+- bNumInterfaces : 配置所支持的接口数．指该配置配备的接口数量，也表示该配置下接口描述符数量．
+
+- bConfigurationValue : 作为Set Configuration的一个参数选择配置值．
+
+- iConfiguration : 用于描述该配置[字符串描述符](https://www.usbzh.com/article/detail-53.html)的索引．
+
+- bmAttributes : 供电模式选择．Bit4-0保留，D7:总线供电，D6:自供电，D5:远程唤醒．
+
+- MaxPower : 总线供电的USB设备的最大消耗电流．以2mA为单位．
+
+- 接口描述符：接口描述符说明了接口所提供的配置，一个配置所拥有的接口数量通过配置描述符的bNumInterfaces决定。
+
+  接口描述符定义：
+
+  ```c
+  struct _INTERFACE_DESCRIPTOR_STRUCT 
+  { 
+      BYTE bLength;           //设备描述符的字节数大小，为0x09 
+      BYTE bDescriptorType;   //描述符类型编号，为0x04
+      BYTE bInterfaceNumber; //接口的编号 
+      BYTE bAlternateSetting;//备用的接口描述符编号 
+      BYTE bNumEndpoints;     //该接口使用端点数，不包括端点0 
+      BYTE bInterfaceClass;   //接口类型 
+      BYTE bInterfaceSubClass;//接口子类型 
+      BYTE bInterfaceProtocol;//接口所遵循的协议 
+      BYTE iInterface;         //描述该接口的字符串索引值 
+  }INTERFACE_DESCRIPTOR_STRUCT
+  ```
+
+  - bLength : 描述符大小．固定为0x09．
+
+  - bDescriptorType : 接口描述符类型．固定为0x04．
+
+  - bInterfaceNumber: 该接口的编号．
+
+  - bAlternateSetting : 用于为上一个字段选择可供替换的位置．即备用的接口描述符标号．
+
+  - bNumEndpoint : 使用的端点数目．端点０除外．
+
+  - bInterfaceClass : 类型代码（由USB分配）．
+
+  - bInterfaceSubClass : 子类型代码（由USB分配）．
+
+  - bInterfaceProtocol : 协议代码（由USB分配）．
+
+  - iInterface : [字符串描述符](https://www.usbzh.com/article/detail-53.html)的索引
+
+    接口关联描述符定义：
+
+    ```c
+    typedef struct _USB_INTERFACE_ASSOCIATION_DESCRIPTOR {
+        UCHAR   bLength;            //长度为8
+        UCHAR   bDescriptorType;    //USB_INTERFACE_ASSOCIATION_DESCRIPTOR_TYPE，值为0x0b
+        UCHAR   bFirstInterface;    //第一个接口编号
+        UCHAR   bInterfaceCount;    //接口总数量
+        UCHAR   bFunctionClass;        //视频接口类代码CC_VIDEO，值0x0E
+        UCHAR   bFunctionSubClass;    //视频子类接口代码 SC_VIDEO_INTERFACE_COLLECTION,值为0x03
+        UCHAR   bFunctionProtocol;     //未用，必须为PC_PROTOCOL_UNDEFINED，值为0x00
+        UCHAR   iFunction;            //字符串描述符索引
+    } USB_INTERFACE_ASSOCIATION_DESCRIPTOR, *PUSB_INTERFACE_ASSOCIATION_DESCRIPTOR;
+    ```
+
+    端点描述符定义：
+
+    ```c
+    struct _ENDPOIN_DESCRIPTOR_STRUCT 
+    { 
+        BYTE bLength;           //设备描述符的字节数大小，为0x7 
+        BYTE bDescriptorType;   //描述符类型编号，为0x05
+        BYTE bEndpointAddress; //端点地址及输入输出属性 
+        BYTE bmAttribute;       //端点的传输类型属性 
+        WORD wMaxPacketSize;   //端点收、发的最大包的大小 
+        BYTE bInterval;         //主机查询端点的时间间隔 
+    } ENDPOIN_DESCRIPTOR_STRUCT ；
+    ```
+
+    - bLength : 描述符大小．固定为0x07．
+
+    - bDescriptorType : [接口描述符](https://www.usbzh.com/article/detail-64.html)类型．固定为0x05．
+
+    - bEndpointAddress : USB设备的端点地址．Bit7，方向，对于控制端点可以忽略，1/0:[IN](https://www.usbzh.com/article/detail-450.html)/[OUT](https://www.usbzh.com/article/detail-449.html)．Bit6-4，保留．BIt3-0：端点号．
+
+    - bmAttributes : 端点属性．Bit7-2，保留（同步有定义）．BIt1-0：00控制，01同步，02批量，03中断．
+
+      当为同步传输时，bEndpointType的bit3-2的值不同代表的含义不同：
+
+      00：无同步
+      01：异步
+      10：适配
+      11：同步
+      BIT5:4
+      00: 表示数据端点
+      01：表示反馈端点Feedback endpoint
+      10：表示隐式反馈数据端点 Implicit feedback Data endpoint
+      11:保留
+
+      wMaxPacketSize : 本端点接收或发送的最大信息包大小．
+
+      USB2.0时：
+
+      对于同步端点，此值用于指示主机在调度中保留的总线时间，这是每(微)帧数据有效负载所需的时间，有效负载时间就是发送一帧数据需要占用的总线时间，在实际数据传输过程中，管道实际使用的带宽可能比保留的带宽少，大家想想，如果实际使用的带宽比保留的还多，那就丢数了；
+      对于其类型的端点，bit10~bit0指定最大数据包大小(以字节为单位)；
+      bit12~bit11对于[高速](https://www.usbzh.com/article/detail-852.html)传输的同步和中断端点有效：bit12~bit11可指定每个微帧的额外通信次数，这里大家一定要知道是在[高速](https://www.usbzh.com/article/detail-852.html)传输中，当一个[事务](https://www.usbzh.com/article/detail-691.html)超时时，在一个微帧时间内重传的次数，如果设置为00b（None），则表示在一个微帧内只传输一个[事务](https://www.usbzh.com/article/detail-691.html)，不进行额外的超时重传，如果设置为01b，则表示在一个微帧内可以传输两次[事务](https://www.usbzh.com/article/detail-691.html)，有一次额外的重传机会，从下面可以看出，一个微帧最多可以有两次重传事务的机会，如果微帧结束了还是失败，就需要等到下一个微帧继续发送该事务；
+
+      USB3.0时：
+
+      wMaxPacketSize表示包的大小。对于bulk为1024，而对于[同步传输](https://www.usbzh.com/article/detail-118.html)，可以为0~1024或 1024。
+
+      [bInterval](https://www.usbzh.com/article/detail-637.html) : 轮询数据传送端点的时间间隔．对于批量传送和控制传送的端点忽略．对于同步传送的端点，必须为１，对于中断传送的端点，范围为1-255．
+
+      对于[全速](https://www.usbzh.com/article/detail-851.html)/[高速](https://www.usbzh.com/article/detail-852.html)同步端点，此值必须在1到16之间。[bInterval](https://www.usbzh.com/article/detail-637.html)值用作2的指数，例如bInterval为4，表示周期为8个单位；
+      对于[全速](https://www.usbzh.com/article/detail-851.html)/低速中断端点，该字段的值可以是1到255，也就是主机多少ms给设备发一次数据请求；
+      对于高速中断端点，使用bInterval值作为2的指数，例如bInterval为4表示周期为8。这个值必须在1到16之间；
+      对于高速批量/控制输出端点，bInterval必须指定端点的最大[NAK](https://www.usbzh.com/article/detail-453.html)速率。值0表示端点永不[NAK](https://www.usbzh.com/article/detail-453.html)。其它值表示每个微帧的bInterval*125us时间最多1个[NAK](https://www.usbzh.com/article/detail-453.html)。这个值的范围必须在0到255之间；
+      00 = None (1 transaction per microframe)
+      01 = 1 additional (2 per microframe)
+      10 = 2 additional (3 per microframe)
+      11 = Reserved
+      其它位默认为0，
+      对于[全速](https://www.usbzh.com/article/detail-851.html)/低速批量/控制输出端点，此值无意义，可以任意指定。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+面试要点：
+
+1.C语言基础
+
+变量类型用法，字节对齐，变量类型大小，函数类型
+
+
+
+函数指针：void (\*pfun)(int),
+
+ typedef void (*led_write_handler_t)(uint16_t conn_handle, user_led_key_t *p_led, uint8_t new_state);
+
+led_write_handler_t led_write_handler;
+
+指针函数：void *pfun(int)
+
+常量指针：char *const ptr，指向字符串的指针，并且指针初始化后不可修改
+
+指针常量：char const *ptr等价于const char *ptr，指向常量字符串，字符串的内容不可修改，但指针指向地址可修改
+
+在32位内核处理器中
+
+struct dteststr
+{
+	int idt;
+	short sdt;
+	char *pstr;
+	char app;
+};
+
+struct dtestst2
+{
+	int idt;
+	char *pstr;
+	char app;
+	short sdt;
+};
+
+char *pstr;
+
+char ch;
+
+short sh;
+
+int idt;
+
+long ldt;
+
+由于需要4字节对齐，所以sizeof(struct dteststr)=16, sizeof(dtestst2)=12, sizeof(pstr)=4, sizeof(ch)=1,sizeof(short)=2,sizeof(int)=4,sizeof(long)=4.
+
+
+
+2.单模双模概念
+
+单模是指蓝牙仅支持BLE，双模指的是既支持经典蓝牙Basic Rate(BR)和增强速率EDR也支持最新的低功耗LE标准
+
+以下商标只有SMART是单模，SMART READY是双模
+
+![image-20230413212637069](E:\databases\note\image-20230413212637069.png)
+
+
+
+蓝牙Basic Rate（BR）是蓝牙传输技术中的一种传输模式，也称为蓝牙基本速率模式。它是蓝牙1.0和1.1版本中使用的传输模式，传输速率为1Mbps。BR模式采用的是高频率跳频技术，将传输信道分成多个子信道，并在不同的子信道之间进行跳跃，以减少干扰和提高传输稳定性。
+
+由于BR模式传输速率较低，适用于传输较少的数据量，如语音通话、简单文本消息等。随着蓝牙技术的发展，后续版本的蓝牙标准引入了更高速的传输模式，如高速模式（Enhanced Data Rate，简称EDR）和低能耗模式（Low Energy，简称LE），以满足数据传输速率和低功耗的需求。
+
+
+
+蓝牙EDR（Enhanced Data Rate）是指蓝牙传输技术中的一种高速传输模式。它是在蓝牙2.0版本中引入的，传输速率可达到3Mbps。相比于蓝牙BR（Basic Rate）模式，EDR模式采用更高效的调制方式和更短的包时隙，可以实现更高的传输速率和更好的传输质量。
+
+EDR模式的引入使得蓝牙技术不仅可以支持低速率的语音通话和简单数据传输，还能够支持更高速率的数据传输，如音频流和视频流的传输等。此外，EDR模式还具有更好的功耗控制和更广泛的应用范围，可以应用于个人电脑、智能手机、音频设备、汽车电子等领域。
+
+USB通话使用什么协议？
+
+USB通话使用UAC协议
+
+蓝讯，BK使用那个版本的蓝牙
+
+BK：RWBT_SW_VERSION_MAJOR，使用蓝牙5.1版本
+
+蓝讯使用蓝牙5.1版本
+
+什么是DRC?
+
+DRC(Dynamic Range Control),通常用来调整音频信号的动态范围，保证信号不至于过大或过小。原理是根据输入信号的大小，对其施加一个增益，大信号施加负增益，小信号施加正增益。使用DRC是为了平衡音量，避免过于嘈杂过于安静，可以防止扬声器损坏保护人们的耳朵，改善音质。
+
+蓝讯，BK音量增益计算
+
+蓝讯：
+
+![image-20230414012709398](E:\databases\note\image-20230414012709398.png)
+
+3.USB HID功能
+
+以STM32为例：
+
+准备抓包工具Bus Hound，USBTreeView。
+
+下载运行STM32 HID例程之后，根据usbd_desc.h中的VID, PID找到USB设备。更改端点0的最大包长CUSTOM_HID_EPIN_SIZE为0x40，最好在usbd_conf.h重新定义。在usbd_custom_hid_if.c里更改报告描述符。CUSTOM_HID_ReportDesc_FS。
+
+USB获取描述符，第一次是为了获取端点0的最大包长度，为8字节。第二次获取设备描述符全部功能。
+
+UCOSIII移植最少需要4K RAM才行。
+
+蓝牙配对过程：
+
+1.host端会通过hci指令发送create connection的命令给到controller，这个命令里面包含指定蓝牙设备地址，控制层会通过这个地址执行paging操作。
+
+2.第二部发送获取对方蓝牙设备特性信息，了解蓝牙设备属性等，例如是否支持OOB配对，也就是通过别的途径交换配对信息，例如NFC蓝牙设备等。
+
+获取完特性后，host端就可以发送LMP_HOST_CONNECTION_REQ PDU，这个是必选步骤，对端蓝牙收到这个请求后，会有三种响应方式：
+
+1. 拒绝连接；
+2. 接受连接；
+3. 接受连接但是请求自己为master；
+
+4.设备回应，可能有3种情况
+
+1.连接被拒绝。
+
+2.连接同意
+
+3.连接同意，但是请求更换角色
+
+5.AHF自适应跳频
+
+在蓝牙设备接受连接请求后，会交换特性，之后AFH会被使用，host端根据干扰情况自动跳到下一个频段，会发送LMP_SET_AFH 和 LMP_CHANNEL_CLASSIFICATION_REQ PDU
+
+6.进行身份认证请求，整个过程就是获取Link Key的过程。Link Key在后续数据传输时使用。
+
+当两个设备事第一次进行连接时，由于双方都没有保存link key,所以需要进行授权验证，控制器向host发送link key请求，如果host回复的是negative,接下来就进入配对过程。如果host返回positive，那双方就不需要进入配对过程。
+
+
+
+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
